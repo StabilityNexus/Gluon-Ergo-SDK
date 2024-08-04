@@ -21,3 +21,21 @@ npm install
 ### To Do
 - [ ] BetaDecay+ (The user sends Protons to the reactor and receives Neutrons)
 - [ ] BetaDecay- (The user sends Neutrons to the reactor and receives Protons)
+
+
+### Usage
+
+```javascript
+// the following example creates a fission transaction for 5 ERGs. Similar approach could be used for fusion transaction
+const gluon = new   Gluon()
+const ergToFission = Number(5e9)
+const userBoxesJs = [...]
+const oracleBoxJs = await getGoldOracleBox()
+const gluonBoxJs = await getGluonBox()
+
+// the following is an instance of UnsignedTransaction which could be used to get reduced tx or for any use cases
+const unsignedTx = gluon.fission(gluonBoxJs, userBoxesJs, oracleBoxJs, ergToFission)
+
+// the following is an unsigned transaction in JSON which could be used to sign using Nautilus or similar wallets without needing any chagnes
+const nautilusTx = gluon.fissionForNautilus(gluonBoxJs, userBoxesJs, oracleBoxJs, ergToFission)
+```
