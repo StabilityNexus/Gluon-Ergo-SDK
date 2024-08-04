@@ -30,8 +30,8 @@ npm install
 const gluon = new   Gluon()
 const ergToFission = Number(5e9)
 const userBoxesJs = [...]
-const oracleBoxJs = await getGoldOracleBox()
-const gluonBoxJs = await getGluonBox()
+const oracleBoxJs = await gluon.getGoldOracleBox()
+const gluonBoxJs = await gluon.getGluonBox()
 
 // the following is an instance of UnsignedTransaction which could be used to get reduced tx or for any use cases
 const unsignedTx = gluon.fission(gluonBoxJs, userBoxesJs, oracleBoxJs, ergToFission)
