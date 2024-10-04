@@ -1,10 +1,12 @@
 import {ErgoTree} from "ergo-lib-wasm-nodejs";
 import {Serializer} from "./serializer";
 import {NEUTRON_ID, PROTON_ID} from "./consts";
+import {GoldOracleBox} from "./goldOracleBox";
 
 export class GluonBox {
     boxJs: any;
     serializer: Serializer;
+    qstar = BigInt(660000000)
 
     constructor(box: any) {
         this.boxJs = box;
@@ -125,8 +127,63 @@ export class GluonBox {
      * returns the new last day of the epoch
      * @param height current height of the blockchain
      */
-    newLastDay(height: number): string {
-        const h = Number(1322477 / 720) * 720
-        return this.serializer.encodeNumber(h)
+    newLastDay(height: number): number {
+        return Math.floor(height / 720) * 720;
     }
+
+    newLastDayRegister(height: number): string {
+        return this.serializer.encodeNumber(this.newLastDay(height))
+    }
+
+    fussionRatio(goldOracle: GoldOracleBox): bigint {
+        const pricePerGram = goldOracle.getPricePerGram() // this is pt
+        const fissionedErg = this.getErgFissioned()
+        const neutronsInCirculation = this.getNeutronsCirculatingSupply()
+        const rightHandMinVal = (neutronsInCirculation * BigInt(pricePerGram) / BigInt(fissionedErg))
+        return rightHandMinVal < this.qstar ? rightHandMinVal : this.qstar
+    }
+
+    varPhiBeta(rErg: bigint, volumeToBeNegate: number[], volumeToMinus: number[]): bigint {
+        const phi0 = BigInt(5000000)
+        const phi1 = BigInt(500000000)
+        const sumVolumeToBeNegate = volumeToBeNegate.reduce((acc, x) => acc + BigInt(x), BigInt(0))
+        const sumVolumeToMinus = volumeToMinus.reduce((acc, x) => acc + BigInt(x), BigInt(0))
+        const volume = sumVolumeToBeNegate < sumVolumeToMinus ? BigInt(0) : sumVolumeToBeNegate - sumVolumeToMinus
+        return phi0 + (phi1 * volume) / rErg
+    }
+
+    protonPrice(goldOracle: GoldOracleBox): bigint {
+        const protonsInCirculation = this.getProtonsCirculatingSupply()
+        const fissonedErg = this.getErgFissioned()
+        const fusionRatio = this.fussionRatio(goldOracle)
+        const oneMinusFusionRatio = BigInt(1e9) - fusionRatio
+        return (oneMinusFusionRatio * BigInt(fissonedErg)) / protonsInCirculation
+    }
+
+    private newVolume(height: number, curVolume: number[]): number[] {
+        const lastDayHeight = this.getLastDay()
+        const daysPassed = Math.min(Math.floor((height - lastDayHeight) / 720), 14)
+        let newVol = Array.from({length: daysPassed}, () => 0).concat(curVolume)
+        newVol = newVol.slice(0, 14)
+        return newVol
+    }
+
+    newVolumeRegister(volume: number[]): string {
+        return this.serializer.encodeCollLong(volume)
+    }
+
+    addVolume(height: number, toAdd: number): number[] {
+        const curVolumePlus = this.getVolumePlus()
+        const newVol = this.newVolume(height, curVolumePlus)
+        newVol[0] += toAdd
+        return newVol
+    }
+
+    subVolume(height: number, toDec: number): number[] {
+        const curVolumeMinus = this.getVolumeMinus()
+        const newVol = this.newVolume(height, curVolumeMinus)
+        newVol[0] -= toDec
+        return newVol
+    }
+
 }

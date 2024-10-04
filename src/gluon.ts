@@ -1,8 +1,9 @@
 import {GluonBox} from "./gluonBox";
 import {getChangeBoxJs, getOutBoxJs, jsToUnsignedTx, signTxJs} from "./txUtils";
 import {Config} from "./config";
-import {ErgoBox, ErgoStateContext, Transaction, UnsignedTransaction} from "ergo-lib-wasm-nodejs";
+import {Constant, ErgoBox, ErgoStateContext, Transaction, UnsignedTransaction} from "ergo-lib-wasm-nodejs";
 import {JSONBI, NodeService} from "./nodeService";
+import {GoldOracleBox} from "./goldOracleBox";
 
 export class Gluon {
     config: Config;
@@ -40,21 +41,30 @@ export class Gluon {
      * @param ergVal - erg value of the transaction
      * @param gluonBox - input gluon box
      */
-    getFeeBoxes(ergVal: number, gluonBox: GluonBox): any[] {
+    getFeeBoxesFissionFusion(ergVal: number, gluonBox: GluonBox): any[] {
         const devFee = this.getDevFee(ergVal, gluonBox)
         const fees = [getOutBoxJs(this.config.DEV_TREE, devFee + this.config.MIN_FEE)]
         if (this.config.UI_FEE > 0) fees.push(getOutBoxJs(this.config.UI_TREE, Math.floor(Number(this.config.UI_FEE * ergVal / 1e5)) + this.config.MIN_FEE))
-        if (this.config.ORACLE_FEE > 0) fees.push(getOutBoxJs(this.config.ORACLE_FEE_TREE, Math.floor(Number(this.config.ORACLE_FEE * ergVal / 1e5)) + this.config.MIN_FEE))
+        // if (this.config.ORACLE_FEE > 0) fees.push(getOutBoxJs(this.config.ORACLE_FEE_TREE, Math.floor(Number(this.config.ORACLE_FEE * ergVal / 1e5)) + this.config.MIN_FEE))
         return fees
     }
 
     /**
-     * get total fee amount required for the transaction either fission or fusion
+     * get total fee amount required for the Fission transaction either fission or fusion
      * @param ergVal - erg value of the transaction
      * @param gluonBox - input gluon box
      */
-    getTotalFeeAmount(ergVal: number, gluonBox: GluonBox): number {
-        return this.getFeeBoxes(ergVal, gluonBox).reduce((acc, i) => acc + i.value, 0)
+    getTotalFeeAmountFission(ergVal: number, gluonBox: GluonBox): number {
+        return this.getFeeBoxesFissionFusion(ergVal, gluonBox).reduce((acc, i) => acc + i.value, 0)
+    }
+
+    /**
+     * get total fee amount required for the Fusion transaction either fission or fusion
+     * @param ergVal - erg value of the transaction
+     * @param gluonBox - input gluon box
+     */
+    getTotalFeeAmountFusion(ergVal: number, gluonBox: GluonBox): number {
+        return this.getFeeBoxesFissionFusion(ergVal, gluonBox).reduce((acc, i) => acc + i.value, 0)
     }
 
     /**
@@ -85,7 +95,7 @@ export class Gluon {
         const outNeutronsAmount = willGet.neutrons
         const outProtonsAmount = willGet.protons
 
-        const fees = this.getFeeBoxes(ergToFission, gluonBox)
+        const fees = this.getFeeBoxesFissionFusion(ergToFission, gluonBox)
 
         const outGluonBoxJs = JSONBI.parse(JSONBI.stringify(gluonBox.boxJs))
         const neutInd = gluonBox.neutronInd()
@@ -104,11 +114,14 @@ export class Gluon {
     private unsignedToNautilusTx(tx: UnsignedTransaction, ins: any, oracle: any): any {
         const txJs = tx.to_js_eip12()
         for (let i = 0; i < txJs.inputs.length; i++) {
+            const prevExtension = txJs.inputs[i].extension
             txJs.inputs[i] = ErgoBox.from_json(JSONBI.stringify(ins[i])).to_js_eip12()
-            txJs.inputs[i].extension = {}
+            if (prevExtension !== undefined)
+                txJs.inputs[i].extension = prevExtension
         }
         for (let i = 0; i < txJs.outputs.length; i++)
-            txJs.outputs[i].extension = {}
+            if (txJs.outputs[i].extension === undefined)
+                txJs.outputs[i].extension = {}
 
         txJs.dataInputs[0] = ErgoBox.from_json(JSONBI.stringify(oracle)).to_js_eip12()
         txJs.dataInputs[0].extension = {}
@@ -160,7 +173,7 @@ export class Gluon {
         const inNeutronsAmount = willNeed.neutrons
         const inProtonsAmount = willNeed.protons
 
-        const fees = this.getFeeBoxes(ergToRedeem, gluonBox)
+        const fees = this.getFeeBoxesFissionFusion(ergToRedeem, gluonBox)
 
         const outGluonBoxJs = JSONBI.parse(JSONBI.stringify(gluonBox.boxJs))
         const neutInd = gluonBox.neutronInd()
@@ -186,6 +199,70 @@ export class Gluon {
     fusionForNautilus(gluonBoxJs: any, userBoxes: any, oracle: any, ergToFusion: number): any {
         let tx = this.fusion(gluonBoxJs, userBoxes, oracle, ergToFusion)
         return this.unsignedToNautilusTx(tx, [gluonBoxJs].concat(userBoxes), oracle)
+    }
+
+    betaDecayPlusWillGet(gluonBox: GluonBox, goldOracleBox: GoldOracleBox, protonsToTransmute: number, height: number): number {
+        const protonVol = (gluonBox.protonPrice(goldOracleBox) * BigInt(protonsToTransmute)) / BigInt(1e9)
+        const volPlus = gluonBox.addVolume(height, Number(protonVol))
+        const volMinus = gluonBox.subVolume(height, 0)
+        const circProtons = gluonBox.getProtonsCirculatingSupply()
+        const circNeutrons = gluonBox.getNeutronsCirculatingSupply()
+
+        const fusionRatio = gluonBox.fussionRatio(goldOracleBox)
+        const fusionRatioMin = BigInt(1e9) - fusionRatio
+        const phiBetaMin = BigInt(1e9) - gluonBox.varPhiBeta(BigInt(gluonBox.getErgFissioned()), volPlus, volMinus)
+
+        const ratio1 = (BigInt(protonsToTransmute) * phiBetaMin) / circProtons
+        const ratio2 = (fusionRatioMin * circNeutrons) / BigInt(1e9)
+        return Number((ratio1 * ratio2) / fusionRatio)
+
+    }
+
+    getFeeBoxesTransmutation(ergVal: number, gluonBox: GluonBox): any[] {
+        const devFee = this.getDevFee(ergVal, gluonBox)
+        const fees = [getOutBoxJs(this.config.DEV_TREE, devFee + this.config.MIN_FEE)]
+        if (this.config.UI_FEE > 0) fees.push(getOutBoxJs(this.config.UI_TREE, Math.floor(Number(this.config.UI_FEE * ergVal / 1e5)) + this.config.MIN_FEE))
+        if (this.config.ORACLE_FEE > 0) fees.push(getOutBoxJs(this.config.ORACLE_FEE_TREE, Math.floor(Number(this.config.ORACLE_FEE * ergVal / 1e5)) + this.config.MIN_FEE))
+        return fees
+    }
+
+    betaDecayPlus(gluonBoxJs: any, buybackBoxJs: any, userBoxes: any, oracle: any, protonsToTransmute: number, height: number): UnsignedTransaction {
+        const gluonBox = new GluonBox(gluonBoxJs)
+        const goldOracleBox = new GoldOracleBox(oracle)
+        const outNeutronsAmount = this.betaDecayPlusWillGet(gluonBox, goldOracleBox, protonsToTransmute, height)
+
+        const protonErgs = (gluonBox.protonPrice(goldOracleBox) * BigInt(protonsToTransmute)) / BigInt(1e9)
+        const volPlus = gluonBox.addVolume(height, Number(protonErgs))
+        const volMinus = gluonBox.subVolume(height, 0)
+
+        const fees = this.getFeeBoxesTransmutation(Number(protonErgs), gluonBox)
+        const buyBackFee = fees[fees.length - 1]
+        buyBackFee.value += buybackBoxJs.value
+        buyBackFee.assets = buybackBoxJs.assets
+
+        const outGluonBoxJs = JSONBI.parse(JSONBI.stringify(gluonBox.boxJs))
+        outGluonBoxJs.assets[gluonBox.neutronInd()].amount -= BigInt(outNeutronsAmount)
+        outGluonBoxJs.assets[gluonBox.protonInd()].amount += BigInt(protonsToTransmute)
+        outGluonBoxJs.additionalRegisters.R6 = gluonBox.newFeeRegister(this.getDevFee(Number(protonErgs), gluonBox))
+        outGluonBoxJs.additionalRegisters.R7 = gluonBox.newVolumeRegister(volPlus)
+        outGluonBoxJs.additionalRegisters.R8 = gluonBox.newVolumeRegister(volMinus)
+        outGluonBoxJs.additionalRegisters.R9 = gluonBox.newLastDayRegister(height)
+
+        const userOutBox = getChangeBoxJs((userBoxes.concat([gluonBox.boxJs, buybackBoxJs])), fees.concat([outGluonBoxJs]), userBoxes[0].ergoTree, this.config.MINER_FEE)
+        const outs = [outGluonBoxJs, userOutBox, buyBackFee].concat(fees.slice(0, fees.length - 1))
+        const ins = [gluonBox.boxJs].concat(userBoxes).concat([buybackBoxJs])
+        const tx = jsToUnsignedTx(ins, outs, [oracle], this.config.MINER_FEE, height)
+        const txJs = tx.to_js_eip12()
+        txJs.inputs[txJs.inputs.length - 1].extension = {
+            "0": "0402"
+        }
+        const newTx = UnsignedTransaction.from_json(JSON.stringify(txJs))
+        return newTx
+    }
+
+    betaDecayPlusForNautilus(gluonBoxJs: any, buybackBoxJs: any, userBoxes: any, oracle: any, protonsToTransmute: number, height: number): any {
+        let tx = this.betaDecayPlus(gluonBoxJs, buybackBoxJs, userBoxes, oracle, protonsToTransmute, height)
+        return this.unsignedToNautilusTx(tx, [gluonBoxJs].concat(userBoxes).concat([buybackBoxJs]), oracle)
     }
 
     /**

@@ -57,7 +57,7 @@ export class NodeService {
 
     async getUnspentBoxByTokenId(tokenId: string, offset?: number, limit?: number) {
         return this.get(
-            `/blockchain/box/unspent/byTokenId/${tokenId}?offset=${offset}&limit=${limit}`
+            `/blockchain/box/unspent/byTokenId/${tokenId}`
         )
     }
 

@@ -67,8 +67,8 @@ function getTokens(assets: any) {
  * @param dInputs data inputs to the tx
  * @param fee miner fee
  */
-export function jsToUnsignedTx(inputs: any, outputs: any, dInputs: any, fee: Number) {
-    const height = Math.max(...inputs.map((i: any) => i.creationHeight))
+export function jsToUnsignedTx(inputs: any, outputs: any, dInputs: any, fee: Number, realHeight: number=0) {
+    var height = Math.max(...inputs.map((i: any) => i.creationHeight))
     const unsignedInputs = new UnsignedInputs()
     for (const box of inputs) {
         const unsignedInput = UnsignedInput.from_box_id(idToBoxId(box.boxId))
