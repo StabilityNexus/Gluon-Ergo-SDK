@@ -131,11 +131,19 @@ export class GluonBox {
         return Math.floor(height / 720) * 720;
     }
 
+    /**
+     * returns the new last day of the epoch
+     * @param height current height of the blockchain
+     */
     newLastDayRegister(height: number): string {
         return this.serializer.encodeNumber(this.newLastDay(height))
     }
 
-    fussionRatio(goldOracle: GoldOracleBox): bigint {
+    /**
+     * returns the fusion ratio
+     * @param goldOracle gold oracle
+     */
+    fusionRatio(goldOracle: GoldOracleBox): bigint {
         const pricePerGram = goldOracle.getPricePerGram() // this is pt
         const fissionedErg = this.getErgFissioned()
         const neutronsInCirculation = this.getNeutronsCirculatingSupply()
@@ -143,6 +151,12 @@ export class GluonBox {
         return rightHandMinVal < this.qstar ? rightHandMinVal : this.qstar
     }
 
+    /**
+     * returns variable phi beta
+     * @param rErg fissioned erg
+     * @param volumeToBeNegate volume to be negated
+     * @param volumeToMinus volume
+     */
     varPhiBeta(rErg: bigint, volumeToBeNegate: number[], volumeToMinus: number[]): bigint {
         const phi0 = BigInt(5000000)
         const phi1 = BigInt(500000000)
@@ -152,14 +166,34 @@ export class GluonBox {
         return phi0 + (phi1 * volume) / rErg
     }
 
+    /**
+     * returns the neutron price in nano ERG
+     * @param goldOracle gold oracle
+     */
+    neutronPrice(goldOracle: GoldOracleBox): bigint {
+        const neutronsInCirculation = this.getNeutronsCirculatingSupply()
+        const fissonedErg = this.getErgFissioned()
+        const fusionRatio = this.fusionRatio(goldOracle)
+        return (fusionRatio * BigInt(fissonedErg)) / neutronsInCirculation
+    }
+
+    /**
+     * returns the proton price in nano ERG
+     * @param goldOracle gold oracle
+     */
     protonPrice(goldOracle: GoldOracleBox): bigint {
         const protonsInCirculation = this.getProtonsCirculatingSupply()
         const fissonedErg = this.getErgFissioned()
-        const fusionRatio = this.fussionRatio(goldOracle)
+        const fusionRatio = this.fusionRatio(goldOracle)
         const oneMinusFusionRatio = BigInt(1e9) - fusionRatio
         return (oneMinusFusionRatio * BigInt(fissonedErg)) / protonsInCirculation
     }
 
+    /**
+     * returns the new volume
+     * @param height current height of the blockchain
+     * @param curVolume current
+     */
     private newVolume(height: number, curVolume: number[]): number[] {
         const lastDayHeight = this.getLastDay()
         const daysPassed = Math.min(Math.floor((height - lastDayHeight) / 720), 14)
@@ -168,10 +202,19 @@ export class GluonBox {
         return newVol
     }
 
+    /**
+     * encodes the new volume
+     * @param volume to be encoded
+     */
     newVolumeRegister(volume: number[]): string {
         return this.serializer.encodeCollLong(volume)
     }
 
+    /**
+     * adds volume to the neutrons of gluon box
+     * @param height current height of the blockchain
+     * @param toAdd volume to be added
+     */
     addVolume(height: number, toAdd: number): number[] {
         const curVolumePlus = this.getVolumePlus()
         const newVol = this.newVolume(height, curVolumePlus)
@@ -179,11 +222,33 @@ export class GluonBox {
         return newVol
     }
 
+    /**
+     * adds volume to the protons of gluon box
+     * @param height current height of the blockchain
+     * @param toDec
+     */
     subVolume(height: number, toDec: number): number[] {
         const curVolumeMinus = this.getVolumeMinus()
         const newVol = this.newVolume(height, curVolumeMinus)
-        newVol[0] -= toDec
+        newVol[0] += toDec
         return newVol
     }
 
+    /**
+     * returns the accumulated volume for the last n days
+     * @param days number of days to accumulate (1-14)
+     */
+    accumulatePlusVolume(days: number = 14): number {
+        if (days > 14) throw new Error('Cannot accumulate volume for more than 14 days')
+        return this.getVolumePlus().slice(0, days).reduce((acc, x) => acc + x, 0)
+    }
+
+    /**
+     * returns the accumulated volume for the last n days
+     * @param days number of days to accumulate (1-14
+     */
+    accumulateMinusVolume(days: number = 14): number {
+        if (days > 14) throw new Error('Cannot accumulate volume for more than 14 days')
+        return this.getVolumeMinus().slice(0, days).reduce((acc, x) => acc + x, 0)
+    }
 }

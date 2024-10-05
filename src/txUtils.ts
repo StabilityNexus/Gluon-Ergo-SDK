@@ -1,4 +1,31 @@
-import { Address, BoxId, BoxValue, Constant, Contract, DataInput, DataInputs, ErgoBox, ErgoBoxCandidate, ErgoBoxCandidateBuilder, ErgoBoxCandidates, ErgoBoxes, ErgoStateContext, ErgoTree, I64, NetworkPrefix, ReducedTransaction, SecretKeys, TokenAmount, TokenId, Tokens, Transaction, UnsignedInput, UnsignedInputs, UnsignedTransaction, Wallet } from 'ergo-lib-wasm-nodejs'
+import {
+    Address,
+    BoxId,
+    BoxValue,
+    Constant,
+    Contract,
+    DataInput,
+    DataInputs,
+    ErgoBox,
+    ErgoBoxCandidate,
+    ErgoBoxCandidateBuilder,
+    ErgoBoxCandidates,
+    ErgoBoxes,
+    ErgoStateContext,
+    ErgoTree,
+    I64,
+    NetworkPrefix,
+    ReducedTransaction,
+    SecretKeys,
+    TokenAmount,
+    TokenId,
+    Tokens,
+    Transaction,
+    UnsignedInput,
+    UnsignedInputs,
+    UnsignedTransaction,
+    Wallet
+} from 'ergo-lib-wasm-nodejs'
 import {JSONBI} from "./nodeService";
 
 function getBoxValue(val: any) {
@@ -66,8 +93,9 @@ function getTokens(assets: any) {
  * @param outputs outputs to the tx
  * @param dInputs data inputs to the tx
  * @param fee miner fee
+ * @param realHeight current height of the blockchain
  */
-export function jsToUnsignedTx(inputs: any, outputs: any, dInputs: any, fee: Number, realHeight: number=0) {
+export function jsToUnsignedTx(inputs: any, outputs: any, dInputs: any, fee: Number, realHeight: number = 0) {
     var height = Math.max(...inputs.map((i: any) => i.creationHeight))
     const unsignedInputs = new UnsignedInputs()
     for (const box of inputs) {
@@ -115,7 +143,7 @@ export function getChangeBoxJs(ins: any, outs: any, changeTree: string, fee: num
         }
     })
     let assets = Object.keys(inTokens).map((tokenId) => {
-        return { tokenId, amount: inTokens[tokenId] }
+        return {tokenId, amount: inTokens[tokenId]}
     }).filter((i: any) => i.amount > 0)
 
     if (inVal - outVal - fee < 0 || Object.values(inTokens).filter((i: any) => i < 0).length > 0) {
@@ -166,3 +194,22 @@ export function signTxJs(inputsJs: any, outsJs: any, dataInptusJs: any, ctx: Erg
     const dataInputs = ErgoBoxes.from_boxes_json(dataInptusJs)
     return signTx(unsignedTx, boxes, dataInputs, ctx)
 }
+
+export function unsignedToEip12Tx(tx: UnsignedTransaction, ins: any, dataInput: any): any {
+    const txJs = tx.to_js_eip12()
+    for (let i = 0; i < txJs.inputs.length; i++) {
+        const prevExtension = txJs.inputs[i].extension
+        txJs.inputs[i] = ErgoBox.from_json(JSONBI.stringify(ins[i])).to_js_eip12()
+        if (prevExtension !== undefined)
+            txJs.inputs[i].extension = prevExtension
+    }
+    for (let i = 0; i < txJs.outputs.length; i++)
+        if (txJs.outputs[i].extension === undefined)
+            txJs.outputs[i].extension = {}
+
+    txJs.dataInputs[0] = ErgoBox.from_json(JSONBI.stringify(dataInput)).to_js_eip12()
+    txJs.dataInputs[0].extension = {}
+
+    return txJs
+}
+

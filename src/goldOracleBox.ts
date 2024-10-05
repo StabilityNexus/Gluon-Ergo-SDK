@@ -20,10 +20,16 @@ export class GoldOracleBox {
         }).filter((reg) => reg !== '');
     }
 
+    /**
+     * returns gold price for 1 kg
+     */
     getPrice(): number {
         return Number(this.serializer.decodeJs(this.getRegisters()[0]));
     }
 
+    /**
+     * returns gold price for 1 gram
+     */
     getPricePerGram(): number {
         return Math.floor(this.getPrice() / 1000);
     }
