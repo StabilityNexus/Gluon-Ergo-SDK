@@ -1,6 +1,6 @@
 ## Gluon Gold SDK
 
-This SDK is meant to facilitate the interction with the Gluon protocol.
+This SDK is meant to facilitate the interaction with the Gluon protocol.
 
 ### Installation
 
@@ -46,17 +46,17 @@ const eip12Tx = gluon.fissionForEip12(gluonBox, oracleBox, userBoxesJs, ergToFis
 // Fusion
 const ergToFusion = Number(5e9)
 const unsignedTx = gluon.fusion(gluonBox, oracleBox, userBoxesJs, ergToFusion)
-const eip12Tx = gluon.fissionForEip12(gluonBox, oracleBox, userBoxesJs, ergToFusion)
+const eip12Tx = gluon.fusionForEip12(gluonBox, oracleBox, userBoxesJs, ergToFusion)
 
 // Transmuting to Gold
-const height = ... // network height that can be gotten from and NodeService instance (see test.ts)
+const height = ... // network height that can be gotten from a NodeService instance (see test.ts)
 const oracleBuyBackJs = await gluon.getOracleBuyBackBoxJs()
 const protonsToTransmute = 5000000
 const eip12Tx = gluon.transmuteToGoldForEip12(gluonBox, oracleBox, userBoxesJs, oracleBuyBackJs, protonsToTransmute, height)
 
 // Transmuting from Gold
-const neutronsToDecay = 5000000
-const eip12Tx = gluon.transmuteFromGoldForEip12(gluonBox, oracleBox, userBoxesJs, oracleBuyBackJs, neutronsToDecay, height)    
+const neutronsToTransmute = 5000000
+const eip12Tx = gluon.transmuteFromGoldForEip12(gluonBox, oracleBox, userBoxesJs, oracleBuyBackJs, neutronsToTransmute, height)    
 
 
 // Gold price
@@ -89,5 +89,5 @@ const fee = getTotalFeeAmountFission(gluonBox, ergtoFission)
 const fee = getTotalFeeAmountTransmuteToGold(gluonBox, oracleBox, protonsToTransmute)
 
 // total needed fee for transmuting from gold
-const fee = getTotalFeeAmountTransmuteFromGold(gluonBox, oracleBox, neutronsToDecay)
+const fee = getTotalFeeAmountTransmuteFromGold(gluonBox, oracleBox, neutronsToTransmute)
 ```
