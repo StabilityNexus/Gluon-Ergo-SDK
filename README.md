@@ -104,9 +104,11 @@ const fees = gluon.getTotalFeeAmountFusion(gluonBox, ergToFusion)
 const feesPercentage = gluon.getFeePercentageFusion(gluonBox, ergToFusion)
 console.log(fees.devFee, fees.uiFee, fees.oracleFee, fees.totalFee)
 console.log(feesPercentage.devFee, feesPercentage.uiFee, feesPercentage.oracleFee, feesPercentage.totalFee)
+// fission is similar
 
 // similarly for transmute to gold
 const fees = gluon.getTotalFeeAmountTransmuteToGold(gluonBox, oracleBox, protonsToTransmute)
 const feesPercentage = gluon.getFeePercentageTransmuteToGold(gluonBox, oracleBox, protonsToTransmute)
 console.log(fees.devFee, fees.uiFee, fees.oracleFee, fees.totalFee)
 console.log(feesPercentage.devFee, feesPercentage.uiFee, feesPercentage.oracleFee, feesPercentage.totalFee)
+// transmute from gold is similar
