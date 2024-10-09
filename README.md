@@ -30,6 +30,8 @@ npm install
 ### Usage
 
 ```javascript
+// all values, including ERG, Neutron and Proton amounts, prices, etc. are without decimals applied
+
 // the following example creates a fission transaction for 5 ERGs. Similar approach could be used for fusion transaction
 const gluon = new Gluon()
 const ergToFission = Number(5e9)
@@ -69,25 +71,42 @@ const gauPrice = await gluon.neutronPrice(oracleBox) // in nanoErgs
 // GAUC price
 const gaucPrice = await gluon.protonPrice(oracleBox) // in nanoErgs
 
-// 1 day volume
-const volume = await gluon.accumulatePlusVolume(1)
-// 5 day volume
-const volume = await gluon.accumulatePlusVolume(5)
-// 14 day volume
-const volume = await gluon.accumulatePlusVolume(14)
+// 2 day volume of protons to neutrons
+const volume = gluon.accumulateVolumeProtonsToNeutrons(2)
+
+// 2 day volume of neutrons to protons
+const volume = gluon.accumulateVolumeNeutronsToProtons(2)
+
+// 10 day volume of protons to neutrons
+const volume = gluon.accumulateVolumeProtonsToNeutrons(10)
+
+// 10 day volume of neutrons to protons
+const volume = gluon.accumulateVolumeNeutronsToProtons(10)
+
+// 14 day volume of protons to neutrons
+const volume = gluon.accumulateVolumeProtonsToNeutrons()
+
+// 14 day volume of neutrons to protons
+const volume = gluon.accumulateVolumeNeutronsToProtons()
+
+// volume of protons to neutrons for the last 14 days
+const volumeArray = gluon.get14DaysVolumeProtonsToNeutrons() // an array with 14 elements for 14 days
+
+// volume of neutrons to protons for the last 14 days
+const volumeArray = gluon.get14DaysVolumeNeutronsToProtons() // an array with 14 elements for 14 days
 
 // fusion ratio
 const fusionRatio = await gluon.fusionRatio(oracleBox)
 
-// total needed fee for fusion
-const fee = getTotalFeeAmountFusion(gluonBox, ergtoFusion)
+// For each of the 4 operations (fission, fusion, transmute to gold, transmute from gold) there is a method to get the required fees
+// In addition to that, there are methods to get the percentage of the fee for the total amount of ERG or Neutron/Proton that is sent/transmuted
+const fees = gluon.getTotalFeeAmountFusion(gluonBox, ergToFusion)
+const feesPercentage = gluon.getFeePercentageFusion(gluonBox, ergToFusion)
+console.log(fees.devFee, fees.uiFee, fees.oracleFee, fees.totalFee)
+console.log(feesPercentage.devFee, feesPercentage.uiFee, feesPercentage.oracleFee, feesPercentage.totalFee)
 
-// total needed fee for fission
-const fee = getTotalFeeAmountFission(gluonBox, ergtoFission)
-
-// total needed fee for transmuting to gold
-const fee = getTotalFeeAmountTransmuteToGold(gluonBox, oracleBox, protonsToTransmute)
-
-// total needed fee for transmuting from gold
-const fee = getTotalFeeAmountTransmuteFromGold(gluonBox, oracleBox, neutronsToTransmute)
-```
+// similarly for transmute to gold
+const fees = gluon.getTotalFeeAmountTransmuteToGold(gluonBox, oracleBox, protonsToTransmute)
+const feesPercentage = gluon.getFeePercentageTransmuteToGold(gluonBox, oracleBox, protonsToTransmute)
+console.log(fees.devFee, fees.uiFee, fees.oracleFee, fees.totalFee)
+console.log(feesPercentage.devFee, feesPercentage.uiFee, feesPercentage.oracleFee, feesPercentage.totalFee)

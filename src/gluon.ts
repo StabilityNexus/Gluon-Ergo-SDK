@@ -1,9 +1,9 @@
-import {GluonBox} from "./gluonBox";
-import {getChangeBoxJs, getOutBoxJs, jsToUnsignedTx, signTxJs, unsignedToEip12Tx} from "./txUtils";
-import {Config} from "./config";
-import {Constant, ErgoBox, ErgoStateContext, Transaction, UnsignedTransaction} from "ergo-lib-wasm-nodejs";
-import {JSONBI, NodeService} from "./nodeService";
-import {GoldOracleBox} from "./goldOracleBox";
+import { GluonBox } from "./gluonBox";
+import { getChangeBoxJs, getOutBoxJs, jsToUnsignedTx, signTxJs, unsignedToEip12Tx } from "./txUtils";
+import { Config } from "./config";
+import { Constant, ErgoBox, ErgoStateContext, Transaction, UnsignedTransaction } from "ergo-lib-wasm-nodejs";
+import { JSONBI, NodeService } from "./nodeService";
+import { GoldOracleBox } from "./goldOracleBox";
 
 export class Gluon {
     config: Config;
@@ -36,6 +36,7 @@ export class Gluon {
         return this.getDecayedDevFee(gluonBox, Math.floor(Number(this.config.DEV_FEE * ergVal / 1e5)))
     }
 
+
     /**
      * get fee boxes for the transaction either fission or fusion
      * @param gluonBox - input gluon box
@@ -51,43 +52,166 @@ export class Gluon {
     }
 
     /**
-     * get total fee amount required for the Fission transaction either fission or fusion
-     * @param ergToFission - erg value for fission
+     * Get total fee amounts required for the Fission transaction
      * @param gluonBox - input gluon box
+     * @param ergToFission - erg value for fission
+     * @returns An object containing the following fee amounts:
+     * - devFee: The fee for the developer
+     * - uiFee: The fee for the UI (if applicable)
+     * - oracleFee: The fee for the oracle (always 0 for fission)
+     * - totalFee: The sum of all fees
      */
-    getTotalFeeAmountFission(gluonBox: GluonBox, ergToFission: number): number {
-        return this.getFeeBoxes(gluonBox, ergToFission, false).reduce((acc, i) => acc + i.value, 0)
+    getTotalFeeAmountFission(gluonBox: GluonBox, ergToFission: number): { devFee: number, uiFee: number, oracleFee: number, totalFee: number } {
+        const feeBoxes = this.getFeeBoxes(gluonBox, ergToFission, false);
+        const devFee = feeBoxes[0].value;
+        const uiFee = feeBoxes.length > 1 ? feeBoxes[1].value : 0;
+        const oracleFee = 0;
+        const totalFee = feeBoxes.reduce((acc, i) => acc + i.value, 0);
+        return { devFee, uiFee, oracleFee, totalFee };
     }
 
     /**
-     * get total fee amount required for the Fusion transaction either fission or fusion
+     * Get fee percentages for the Fission transaction
+     * @param gluonBox - input gluon box
+     * @param ergToFission - erg value for fission
+     * @returns An object containing the following fee percentages:
+     * - devFee: The fee percentage for the developer
+     * - uiFee: The fee percentage for the UI (if applicable)
+     * - oracleFee: The fee percentage for the oracle (always 0 for fission)
+     * - totalFee: The total fee percentage
+    */
+    getFeePercentageFission(gluonBox: GluonBox, ergToFission: number): { devFee: number, uiFee: number, oracleFee: number, totalFee: number } {
+        const fees = this.getTotalFeeAmountFission(gluonBox, ergToFission)
+        return {
+            devFee: fees.devFee / ergToFission,
+            uiFee: fees.uiFee / ergToFission,
+            oracleFee: fees.oracleFee / ergToFission,
+            totalFee: fees.totalFee / ergToFission
+        }
+    }
+
+    /**
+     * Get total fee amounts required for the Fusion transaction
      * @param ergToFusion - erg value for fusion
      * @param gluonBox - input gluon box
+     * @returns An object containing the following fee amounts:
+     * - devFee: The fee for the developer
+     * - uiFee: The fee for the UI (if applicable)
+     * - oracleFee: The fee for the oracle (always 0 for fusion)
+     * - totalFee: The sum of all fees
      */
-    getTotalFeeAmountFusion(gluonBox: GluonBox, ergToFusion: number): number {
-        return this.getFeeBoxes(gluonBox, ergToFusion, false).reduce((acc, i) => acc + i.value, 0)
+    getTotalFeeAmountFusion(gluonBox: GluonBox, ergToFusion: number): { devFee: number, uiFee: number, oracleFee: number, totalFee: number } {
+        const feeBoxes = this.getFeeBoxes(gluonBox, ergToFusion, false);
+        const devFee = feeBoxes[0].value;
+        const uiFee = feeBoxes.length > 1 ? feeBoxes[1].value : 0;
+        const oracleFee = 0;
+        const totalFee = feeBoxes.reduce((acc, i) => acc + i.value, 0);
+        return { devFee, uiFee, oracleFee, totalFee };
     }
 
     /**
-     * get total needed fee amount required for the Transmute to Gold transaction
+     * Get fee percentages for the Fusion transaction
+     * @param gluonBox - input gluon box
+     * @param ergToFusion - erg value for fusion
+     * @returns An object containing the following fee percentages:
+     * - devFee: The fee percentage for the developer
+     * - uiFee: The fee percentage for the UI (if applicable)
+     * - oracleFee: The fee percentage for the oracle (always 0 for fusion)
+     * - totalFee: The total fee percentage
+    */
+    getFeePercentageFusion(gluonBox: GluonBox, ergToFusion: number): { devFee: number, uiFee: number, oracleFee: number, totalFee: number } {
+        const fees = this.getTotalFeeAmountFusion(gluonBox, ergToFusion)
+        return {
+            devFee: fees.devFee / ergToFusion,
+            uiFee: fees.uiFee / ergToFusion,
+            oracleFee: fees.oracleFee / ergToFusion,
+            totalFee: fees.totalFee / ergToFusion
+        }
+    }
+
+    /**
+     * Get total fee amounts required for the Transmute to Gold transaction
      * @param gluonBox - input gluon box
      * @param goldOracleBox - gold oracle box
      * @param protonsToTransmute - number of protons to transmute
+     * @returns An object containing the following fee amounts:
+     * - devFee: The fee for the developer
+     * - uiFee: The fee for the UI (if applicable)
+     * - oracleFee: The fee for the oracle
+     * - totalFee: The sum of all fees
      */
-    getTotalFeeAmountTransmuteToGold(gluonBox: GluonBox, goldOracleBox: GoldOracleBox, protonsToTransmute: number): number {
-        const protonVol = (gluonBox.protonPrice(goldOracleBox) * BigInt(protonsToTransmute)) / BigInt(1e9)
-        return this.getFeeBoxes(gluonBox, Number(protonVol), true).reduce((acc, i) => acc + i.value, 0)
+    getTotalFeeAmountTransmuteToGold(gluonBox: GluonBox, goldOracleBox: GoldOracleBox, protonsToTransmute: number): { devFee: number, uiFee: number, oracleFee: number, totalFee: number } {
+        const protonVol = (gluonBox.protonPrice(goldOracleBox) * BigInt(protonsToTransmute)) / BigInt(1e9);
+        const feeBoxes = this.getFeeBoxes(gluonBox, Number(protonVol), true);
+        const devFee = feeBoxes[0].value;
+        const uiFee = feeBoxes.length > 1 ? feeBoxes[1].value : 0;
+        const oracleFee = feeBoxes.length > 2 ? feeBoxes[2].value : 0;
+        const totalFee = feeBoxes.reduce((acc, i) => acc + i.value, 0);
+        return { devFee, uiFee, oracleFee, totalFee };
     }
 
     /**
-     * get total needed fee amount required for the Transmute from Gold transaction
+     * Get fee percentages for the Transmute to Gold transaction
+     * @param gluonBox - input gluon box
+     * @param goldOracleBox - gold oracle box
+     * @param protonsToTransmute - number of protons to transmute
+     * @returns An object containing the following fee percentages:
+     * - devFee: The fee percentage for the developer
+     * - uiFee: The fee percentage for the UI (if applicable)
+     * - oracleFee: The fee percentage for the oracle
+     * - totalFee: The total fee percentage
+    */
+    getFeePercentageTransmuteToGold(gluonBox: GluonBox, goldOracleBox: GoldOracleBox, protonsToTransmute: number): { devFee: number, uiFee: number, oracleFee: number, totalFee: number } {
+        const fees = this.getTotalFeeAmountTransmuteToGold(gluonBox, goldOracleBox, protonsToTransmute)
+        const protonVol = (gluonBox.protonPrice(goldOracleBox) * BigInt(protonsToTransmute)) / BigInt(1e9);
+        return {
+            devFee: fees.devFee / Number(protonVol),
+            uiFee: fees.uiFee / Number(protonVol),
+            oracleFee: fees.oracleFee / Number(protonVol),
+            totalFee: fees.totalFee / Number(protonVol)
+        }
+    }
+
+    /**
+     * Get total fee amounts required for the Transmute from Gold transaction
      * @param gluonBox - input gluon box
      * @param goldOracleBox - gold oracle box
      * @param neutronsToDecay - number of neutrons to decay
+     * @returns An object containing the following fee amounts:
+     * - devFee: The fee for the developer
+     * - uiFee: The fee for the UI (if applicable)
+     * - oracleFee: The fee for the oracle
+     * - totalFee: The sum of all fees
      */
-    getTotalFeeAmountTransmuteFromGold(gluonBox: GluonBox, goldOracleBox: GoldOracleBox, neutronsToDecay: number): number {
-        const neutronVol = (gluonBox.neutronPrice(goldOracleBox) * BigInt(neutronsToDecay)) / BigInt(1e9)
-        return this.getFeeBoxes(gluonBox, Number(neutronVol), true).reduce((acc, i) => acc + i.value, 0)
+    getTotalFeeAmountTransmuteFromGold(gluonBox: GluonBox, goldOracleBox: GoldOracleBox, neutronsToDecay: number): { devFee: number, uiFee: number, oracleFee: number, totalFee: number } {
+        const neutronVol = (gluonBox.neutronPrice(goldOracleBox) * BigInt(neutronsToDecay)) / BigInt(1e9);
+        const feeBoxes = this.getFeeBoxes(gluonBox, Number(neutronVol), true);
+        const devFee = feeBoxes[0].value;
+        const uiFee = feeBoxes.length > 1 ? feeBoxes[1].value : 0;
+        const oracleFee = feeBoxes.length > 2 ? feeBoxes[2].value : 0;
+        const totalFee = feeBoxes.reduce((acc, i) => acc + i.value, 0);
+        return { devFee, uiFee, oracleFee, totalFee };
+    }
+
+    /**
+     * Get fee percentages for the Transmute from Gold transaction
+     * @param gluonBox - input gluon box
+     * @param goldOracleBox - gold oracle box
+     * @param neutronsToDecay - number of neutrons to decay
+     * @returns An object containing the following fee percentages:
+     * - devFee: The fee percentage for the developer
+     * - uiFee: The fee percentage for the UI (if applicable)
+     * - oracleFee: The fee percentage for the oracle
+    */
+    getFeePercentageTransmuteFromGold(gluonBox: GluonBox, goldOracleBox: GoldOracleBox, neutronsToDecay: number): { devFee: number, uiFee: number, oracleFee: number, totalFee: number } {
+        const fees = this.getTotalFeeAmountTransmuteFromGold(gluonBox, goldOracleBox, neutronsToDecay)
+        const neutronVol = (gluonBox.neutronPrice(goldOracleBox) * BigInt(neutronsToDecay)) / BigInt(1e9);
+        return {
+            devFee: fees.devFee / Number(neutronVol),
+            uiFee: fees.uiFee / Number(neutronVol),
+            oracleFee: fees.oracleFee / Number(neutronVol),
+            totalFee: fees.totalFee / Number(neutronVol)
+        }
     }
 
     /**
@@ -101,7 +225,7 @@ export class Gluon {
         const ergFissioned = gluonBox.getErgFissioned()
         const outNeutronsAmount = Number((BigInt(ergToFission) * BigInt(sNeutrons) * ((BigInt(1e9) - BigInt(1e6))) / BigInt(ergFissioned)) / BigInt(1e9))
         const outProtonsAmount = Number((BigInt(ergToFission) * BigInt(sProtons) * ((BigInt(1e9) - BigInt(1e6))) / BigInt(ergFissioned)) / BigInt(1e9))
-        return {neutrons: outNeutronsAmount, protons: outProtonsAmount}
+        return { neutrons: outNeutronsAmount, protons: outProtonsAmount }
     }
 
     /**
@@ -159,7 +283,7 @@ export class Gluon {
         const denominator = BigInt(ergFissioned) * (BigInt(1e9) - BigInt(5e6))
         const inNeutronsAmount = Number(inNeutronsNumerator / denominator)
         const inProtonsAmount = Number(inProtonsNumerator / denominator)
-        return {neutrons: inNeutronsAmount, protons: inProtonsAmount}
+        return { neutrons: inNeutronsAmount, protons: inProtonsAmount }
     }
 
     /**

@@ -25,14 +25,14 @@ export class GluonBox {
     /**
      * @returns {number[]} [volumePlus, volumeMinus]
      */
-    getVolumePlus(): number[] {
+    get14DaysVolumeProtonsToNeutrons(): number[] {
         return this.serializer.decodeCollLong(this.getRegisters()[3])
     }
 
     /**
      * @returns {number[]} [volumePlus, volumeMinus]
      */
-    getVolumeMinus(): number[] {
+    get14DaysVolumeNeutronsToProtons(): number[] {
         return this.serializer.decodeCollLong(this.getRegisters()[4])
     }
 
@@ -216,7 +216,7 @@ export class GluonBox {
      * @param toAdd volume to be added
      */
     addVolume(height: number, toAdd: number): number[] {
-        const curVolumePlus = this.getVolumePlus()
+        const curVolumePlus = this.get14DaysVolumeProtonsToNeutrons()
         const newVol = this.newVolume(height, curVolumePlus)
         newVol[0] += toAdd
         return newVol
@@ -228,7 +228,7 @@ export class GluonBox {
      * @param toDec
      */
     subVolume(height: number, toDec: number): number[] {
-        const curVolumeMinus = this.getVolumeMinus()
+        const curVolumeMinus = this.get14DaysVolumeNeutronsToProtons()
         const newVol = this.newVolume(height, curVolumeMinus)
         newVol[0] += toDec
         return newVol
@@ -238,17 +238,17 @@ export class GluonBox {
      * returns the accumulated volume for the last n days
      * @param days number of days to accumulate (1-14)
      */
-    accumulatePlusVolume(days: number = 14): number {
+    accumulateVolumeProtonsToNeutrons(days: number = 14): number {
         if (days > 14) throw new Error('Cannot accumulate volume for more than 14 days')
-        return this.getVolumePlus().slice(0, days).reduce((acc, x) => acc + x, 0)
+        return this.get14DaysVolumeProtonsToNeutrons().slice(0, days).reduce((acc, x) => acc + x, 0)
     }
 
     /**
      * returns the accumulated volume for the last n days
-     * @param days number of days to accumulate (1-14
+     * @param days number of days to accumulate (1-14)
      */
-    accumulateMinusVolume(days: number = 14): number {
+    accumulateVolumeNeutronsToProtons(days: number = 14): number {
         if (days > 14) throw new Error('Cannot accumulate volume for more than 14 days')
-        return this.getVolumeMinus().slice(0, days).reduce((acc, x) => acc + x, 0)
+        return this.get14DaysVolumeNeutronsToProtons().slice(0, days).reduce((acc, x) => acc + x, 0)
     }
 }
