@@ -1,12 +1,12 @@
 import { Config } from "./config";
 import { Gluon } from "./gluon";
-import {NodeService} from "./nodeService";
+import { NodeService } from "./nodeService";
 
 
 const node = new NodeService("http://95.217.180.19:9053/")
 
 async function testFission() {
-    const gluon = new   Gluon()
+    const gluon = new Gluon()
     const userBoxJs = await node.getBoxById("cb0237c893a7a9bc568b40f35a076ba49fe06cc2104dc641fc340b40fd5dc2a6")
     const oracleBoxJs = await gluon.getGoldOracleBox()
     const gluonBoxJs = await gluon.getGluonBox()
@@ -16,7 +16,7 @@ async function testFission() {
 }
 
 async function testFusion() {
-    const gluon = new   Gluon()
+    const gluon = new Gluon()
     const userBoxJs = await node.getBoxById("cb0237c893a7a9bc568b40f35a076ba49fe06cc2104dc641fc340b40fd5dc2a6")
     const oracleBoxJs = await gluon.getGoldOracleBox()
     const gluonBoxJs = await gluon.getGluonBox()
@@ -40,7 +40,7 @@ async function testBetaPlus() {
 async function testBetaMinus() {
     const gluon = new Gluon()
     const userBoxJs = await node.getBoxById("cb0237c893a7a9bc568b40f35a076ba49fe06cc2104dc641fc340b40fd5dc2a6")
-    const oracleBuyBackJs =  await gluon.getOracleBuyBackBoxJs()
+    const oracleBuyBackJs = await gluon.getOracleBuyBackBoxJs()
     const oracleBoxJs = await gluon.getGoldOracleBox()
     const gluonBoxJs = await gluon.getGluonBox()
 

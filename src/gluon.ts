@@ -43,11 +43,12 @@ export class Gluon {
      * @param ergVal - erg value of the transaction
      * @param withOracleFee whether to include oracle fee or not
      */
-    getFeeBoxes(gluonBox: GluonBox, ergVal: number, withOracleFee: boolean = true): any[] {
+    getFeeBoxes(gluonBox: GluonBox, ergVal: number, withOracleFee: boolean = true): { devFee?: any, uiFee?: any, oracleFee?: any } {
+        const fees: { devFee?: any, uiFee?: any, oracleFee?: any } = {}
         const devFee = this.getDevFee(gluonBox, ergVal)
-        const fees = [getOutBoxJs(this.config.DEV_TREE, devFee + this.config.MIN_FEE)]
-        if (this.config.UI_FEE > 0) fees.push(getOutBoxJs(this.config.UI_TREE, Math.floor(Number(this.config.UI_FEE * ergVal / 1e5)) + this.config.MIN_FEE))
-        if (this.config.ORACLE_FEE > 0 && withOracleFee) fees.push(getOutBoxJs(this.config.ORACLE_FEE_TREE, Math.floor(Number(this.config.ORACLE_FEE * ergVal / 1e5)) + this.config.MIN_FEE))
+        fees.devFee = getOutBoxJs(this.config.DEV_TREE, devFee + this.config.MIN_FEE)
+        if (this.config.UI_FEE > 0) fees.uiFee = getOutBoxJs(this.config.UI_TREE, Math.floor(Number(this.config.UI_FEE * ergVal / 1e5)) + this.config.MIN_FEE)
+        if (this.config.ORACLE_FEE > 0 && withOracleFee) fees.oracleFee = getOutBoxJs(this.config.ORACLE_FEE_TREE, Math.floor(Number(this.config.ORACLE_FEE * ergVal / 1e5)) + this.config.MIN_FEE)
         return fees
     }
 
@@ -63,10 +64,10 @@ export class Gluon {
      */
     getTotalFeeAmountFission(gluonBox: GluonBox, ergToFission: number): { devFee: number, uiFee: number, oracleFee: number, totalFee: number } {
         const feeBoxes = this.getFeeBoxes(gluonBox, ergToFission, false);
-        const devFee = feeBoxes[0].value;
-        const uiFee = feeBoxes.length > 1 ? feeBoxes[1].value : 0;
+        const devFee = feeBoxes.devFee?.value || 0;
+        const uiFee = feeBoxes.uiFee?.value || 0;
         const oracleFee = 0;
-        const totalFee = feeBoxes.reduce((acc, i) => acc + i.value, 0);
+        const totalFee = devFee + uiFee + oracleFee;
         return { devFee, uiFee, oracleFee, totalFee };
     }
 
@@ -102,10 +103,10 @@ export class Gluon {
      */
     getTotalFeeAmountFusion(gluonBox: GluonBox, ergToFusion: number): { devFee: number, uiFee: number, oracleFee: number, totalFee: number } {
         const feeBoxes = this.getFeeBoxes(gluonBox, ergToFusion, false);
-        const devFee = feeBoxes[0].value;
-        const uiFee = feeBoxes.length > 1 ? feeBoxes[1].value : 0;
+        const devFee = feeBoxes.devFee?.value || 0;
+        const uiFee = feeBoxes.uiFee?.value || 0;
         const oracleFee = 0;
-        const totalFee = feeBoxes.reduce((acc, i) => acc + i.value, 0);
+        const totalFee = devFee + uiFee + oracleFee;
         return { devFee, uiFee, oracleFee, totalFee };
     }
 
@@ -143,10 +144,10 @@ export class Gluon {
     getTotalFeeAmountTransmuteToGold(gluonBox: GluonBox, goldOracleBox: GoldOracleBox, protonsToTransmute: number): { devFee: number, uiFee: number, oracleFee: number, totalFee: number } {
         const protonVol = (gluonBox.protonPrice(goldOracleBox) * BigInt(protonsToTransmute)) / BigInt(1e9);
         const feeBoxes = this.getFeeBoxes(gluonBox, Number(protonVol), true);
-        const devFee = feeBoxes[0].value;
-        const uiFee = feeBoxes.length > 1 ? feeBoxes[1].value : 0;
-        const oracleFee = feeBoxes.length > 2 ? feeBoxes[2].value : 0;
-        const totalFee = feeBoxes.reduce((acc, i) => acc + i.value, 0);
+        const devFee = feeBoxes.devFee?.value || 0;
+        const uiFee = feeBoxes.uiFee?.value || 0;
+        const oracleFee = feeBoxes.oracleFee?.value || 0;
+        const totalFee = devFee + uiFee + oracleFee;
         return { devFee, uiFee, oracleFee, totalFee };
     }
 
@@ -186,17 +187,17 @@ export class Gluon {
     getTotalFeeAmountTransmuteFromGold(gluonBox: GluonBox, goldOracleBox: GoldOracleBox, neutronsToDecay: number): { devFee: number, uiFee: number, oracleFee: number, totalFee: number } {
         const neutronVol = (gluonBox.neutronPrice(goldOracleBox) * BigInt(neutronsToDecay)) / BigInt(1e9);
         const feeBoxes = this.getFeeBoxes(gluonBox, Number(neutronVol), true);
-        const devFee = feeBoxes[0].value;
-        const uiFee = feeBoxes.length > 1 ? feeBoxes[1].value : 0;
-        const oracleFee = feeBoxes.length > 2 ? feeBoxes[2].value : 0;
-        const totalFee = feeBoxes.reduce((acc, i) => acc + i.value, 0);
+        const devFee = feeBoxes.devFee?.value || 0;
+        const uiFee = feeBoxes.uiFee?.value || 0;
+        const oracleFee = feeBoxes.oracleFee?.value || 0;
+        const totalFee = devFee + uiFee + oracleFee;
         return { devFee, uiFee, oracleFee, totalFee };
     }
 
     /**
      * Get fee percentages for the Transmute from Gold transaction
      * @param gluonBox - input gluon box
-     * @param goldOracleBox - gold oracle box
+    //  * @param goldOracleBox - gold oracle box
      * @param neutronsToDecay - number of neutrons to decay
      * @returns An object containing the following fee percentages:
      * - devFee: The fee percentage for the developer
@@ -251,8 +252,9 @@ export class Gluon {
         outGluonBoxJs.value += ergToFission
         outGluonBoxJs.additionalRegisters.R6 = gluonBox.newFeeRegister(this.getDevFee(gluonBox, ergToFission))
 
-        const userOutBox = getChangeBoxJs((userBoxes.concat([gluonBox.boxJs])), fees.concat([outGluonBoxJs]), userBoxes[0].ergoTree, this.config.MINER_FEE)
-        const outs = [outGluonBoxJs, userOutBox].concat(fees)
+        const feeBoxesArray = Object.values(fees).filter(Boolean)
+        const userOutBox = getChangeBoxJs((userBoxes.concat([gluonBox.boxJs])), feeBoxesArray.concat([outGluonBoxJs]), userBoxes[0].ergoTree, this.config.MINER_FEE)
+        const outs = [outGluonBoxJs, userOutBox].concat(feeBoxesArray)
         const ins = [gluonBox.boxJs].concat(userBoxes)
         return jsToUnsignedTx(ins, outs, [oracle.boxJs], this.config.MINER_FEE)
     }
@@ -309,8 +311,9 @@ export class Gluon {
         outGluonBoxJs.value -= ergToRedeem
         outGluonBoxJs.additionalRegisters.R6 = gluonBox.newFeeRegister(this.getDevFee(gluonBox, ergToRedeem))
 
-        const userOutBox = getChangeBoxJs((userBoxes.concat([gluonBox.boxJs])), fees.concat([outGluonBoxJs]), userBoxes[0].ergoTree, this.config.MINER_FEE)
-        const outs = [outGluonBoxJs, userOutBox].concat(fees)
+        const feeBoxesArray = Object.values(fees).filter(Boolean)
+        const userOutBox = getChangeBoxJs((userBoxes.concat([gluonBox.boxJs])), feeBoxesArray.concat([outGluonBoxJs]), userBoxes[0].ergoTree, this.config.MINER_FEE)
+        const outs = [outGluonBoxJs, userOutBox].concat(feeBoxesArray)
         const ins = [gluonBox.boxJs].concat(userBoxes)
         return jsToUnsignedTx(ins, outs, [oracle.boxJs], this.config.MINER_FEE)
     }
@@ -367,8 +370,8 @@ export class Gluon {
         const volMinus = gluonBox.subVolume(height, 0)
 
         const fees = this.getFeeBoxes(gluonBox, Number(protonErgs))
-        const buyBackFee = fees[fees.length - 1]
-        buyBackFee.value += buybackBoxJs.value
+        const buyBackFee = fees.oracleFee || {}
+        buyBackFee.value = (buyBackFee.value || 0) + buybackBoxJs.value
         buyBackFee.assets = buybackBoxJs.assets
 
         const outGluonBoxJs = JSONBI.parse(JSONBI.stringify(gluonBox.boxJs))
@@ -379,8 +382,9 @@ export class Gluon {
         outGluonBoxJs.additionalRegisters.R8 = gluonBox.newVolumeRegister(volMinus)
         outGluonBoxJs.additionalRegisters.R9 = gluonBox.newLastDayRegister(height)
 
-        const userOutBox = getChangeBoxJs((userBoxes.concat([gluonBox.boxJs, buybackBoxJs])), fees.concat([outGluonBoxJs]), userBoxes[0].ergoTree, this.config.MINER_FEE)
-        const outs = [outGluonBoxJs, userOutBox, buyBackFee].concat(fees.slice(0, fees.length - 1))
+        const feeBoxesArray = Object.values(fees).filter(Boolean)
+        const userOutBox = getChangeBoxJs((userBoxes.concat([gluonBox.boxJs, buybackBoxJs])), feeBoxesArray.concat([outGluonBoxJs]), userBoxes[0].ergoTree, this.config.MINER_FEE)
+        const outs = [outGluonBoxJs, userOutBox, buyBackFee].concat(feeBoxesArray.filter(box => box !== fees.oracleFee))
         const ins = [gluonBox.boxJs].concat(userBoxes).concat([buybackBoxJs])
         const tx = jsToUnsignedTx(ins, outs, [goldOracleBox.boxJs], this.config.MINER_FEE, height)
         const txJs = tx.to_js_eip12()
@@ -443,7 +447,8 @@ export class Gluon {
         const volPlus = gluonBox.addVolume(height, 0)
         const volMinus = gluonBox.subVolume(height, Number(neutronsErgs))
 
-        const fees = this.getFeeBoxes(gluonBox, Number(neutronsErgs))
+        const feesJs = this.getFeeBoxes(gluonBox, Number(neutronsErgs))
+        const fees = Object.values(feesJs).filter(Boolean)
         const buyBackFee = fees[fees.length - 1]
         buyBackFee.value += buybackBoxJs.value
         buyBackFee.assets = buybackBoxJs.assets
