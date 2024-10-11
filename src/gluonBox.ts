@@ -1,6 +1,6 @@
 import {ErgoTree} from "ergo-lib-wasm-nodejs";
 import {Serializer} from "./serializer";
-import {NEUTRON_ID, PROTON_ID} from "./consts";
+import {BUCKET_LEN, NEUTRON_ID, PROTON_ID} from "./consts";
 import {GoldOracleBox} from "./goldOracleBox";
 
 export class GluonBox {
@@ -25,14 +25,14 @@ export class GluonBox {
     /**
      * @returns {number[]} [volumePlus, volumeMinus]
      */
-    get14DaysVolumeProtonsToNeutrons(): number[] {
+    getVolumeProtonsToNeutronsArray(): number[] {
         return this.serializer.decodeCollLong(this.getRegisters()[3])
     }
 
     /**
      * @returns {number[]} [volumePlus, volumeMinus]
      */
-    get14DaysVolumeNeutronsToProtons(): number[] {
+    getVolumeNeutronsToProtonsArray(): number[] {
         return this.serializer.decodeCollLong(this.getRegisters()[4])
     }
 
@@ -196,9 +196,9 @@ export class GluonBox {
      */
     private newVolume(height: number, curVolume: number[]): number[] {
         const lastDayHeight = this.getLastDay()
-        const daysPassed = Math.min(Math.floor((height - lastDayHeight) / 720), 14)
+        const daysPassed = Math.min(Math.floor((height - lastDayHeight) / 720), BUCKET_LEN)
         let newVol = Array.from({length: daysPassed}, () => 0).concat(curVolume)
-        newVol = newVol.slice(0, 14)
+        newVol = newVol.slice(0, BUCKET_LEN)
         return newVol
     }
 
@@ -216,7 +216,7 @@ export class GluonBox {
      * @param toAdd volume to be added
      */
     addVolume(height: number, toAdd: number): number[] {
-        const curVolumePlus = this.get14DaysVolumeProtonsToNeutrons()
+        const curVolumePlus = this.getVolumeProtonsToNeutronsArray()
         const newVol = this.newVolume(height, curVolumePlus)
         newVol[0] += toAdd
         return newVol
@@ -228,7 +228,7 @@ export class GluonBox {
      * @param toDec
      */
     subVolume(height: number, toDec: number): number[] {
-        const curVolumeMinus = this.get14DaysVolumeNeutronsToProtons()
+        const curVolumeMinus = this.getVolumeNeutronsToProtonsArray()
         const newVol = this.newVolume(height, curVolumeMinus)
         newVol[0] += toDec
         return newVol
@@ -236,19 +236,19 @@ export class GluonBox {
 
     /**
      * returns the accumulated volume for the last n days
-     * @param days number of days to accumulate (1-14)
+     * @param days number of days to accumulate (1-BUCKET_LEN)
      */
-    accumulateVolumeProtonsToNeutrons(days: number = 14): number {
-        if (days > 14) throw new Error('Cannot accumulate volume for more than 14 days')
-        return this.get14DaysVolumeProtonsToNeutrons().slice(0, days).reduce((acc, x) => acc + x, 0)
+    accumulateVolumeProtonsToNeutrons(days: number = BUCKET_LEN): number {
+        if (days > BUCKET_LEN) throw new Error(`Cannot accumulate volume for more than ${BUCKET_LEN} days`)
+        return this.getVolumeProtonsToNeutronsArray().slice(0, days).reduce((acc, x) => acc + x, 0)
     }
 
     /**
      * returns the accumulated volume for the last n days
-     * @param days number of days to accumulate (1-14)
+     * @param days number of days to accumulate (1-BUCKET_LEN)
      */
-    accumulateVolumeNeutronsToProtons(days: number = 14): number {
-        if (days > 14) throw new Error('Cannot accumulate volume for more than 14 days')
-        return this.get14DaysVolumeNeutronsToProtons().slice(0, days).reduce((acc, x) => acc + x, 0)
+    accumulateVolumeNeutronsToProtons(days: number = BUCKET_LEN): number {
+        if (days > BUCKET_LEN) throw new Error(`Cannot accumulate volume for more than ${BUCKET_LEN} days`)
+        return this.getVolumeNeutronsToProtonsArray().slice(0, days).reduce((acc, x) => acc + x, 0)
     }
 }

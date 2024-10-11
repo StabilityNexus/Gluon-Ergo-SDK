@@ -15,3 +15,4 @@ export const DEV_FEE = 500;
 export const UI_FEE = 0;
 export const ORACLE_FEE = 100;
 export const NODE_URL = 'http://95.217.180.19:9053/';
+export const BUCKET_LEN = 14;
