@@ -1,4 +1,4 @@
-import {ErgoTree} from "ergo-lib-wasm-nodejs";
+import {ErgoTree} from "@nautilus-js/eip12-types";
 import {Serializer} from "./serializer";
 import {BUCKET_LEN, NEUTRON_ID, PROTON_ID} from "./consts";
 import {GoldOracleBox} from "./goldOracleBox";
@@ -23,45 +23,46 @@ export class GluonBox {
     }
 
     /**
-     * @returns {number[]} [volumePlus, volumeMinus]
+     * @returns {Promise<number[]>} [volumePlus, volumeMinus]
      */
-    getVolumeProtonsToNeutronsArray(): number[] {
-        return this.serializer.decodeCollLong(this.getRegisters()[3])
+    async getVolumeProtonsToNeutronsArray(): Promise<number[]> {
+        return await this.serializer.decodeCollLong(this.getRegisters()[3])
     }
 
     /**
-     * @returns {number[]} [volumePlus, volumeMinus]
+     * @returns {Promise<number[]>} [volumePlus, volumeMinus]
      */
-    getVolumeNeutronsToProtonsArray(): number[] {
-        return this.serializer.decodeCollLong(this.getRegisters()[4])
+    async getVolumeNeutronsToProtonsArray(): Promise<number[]> {
+        return await this.serializer.decodeCollLong(this.getRegisters()[4])
     }
 
     /**
-     * @returns {number} last day of the epoch
+     * @returns {Promise<number>} last day of the epoch
      */
-    getLastDay(): number {
-        return Number(this.serializer.decodeJs(this.getRegisters()[5]));
+    async getLastDay(): Promise<number> {
+        return Number(await this.serializer.decodeJs(this.getRegisters()[5]));
     }
 
     /**
-     * @returns {number[]} [devFee, maxFee]
+     * @returns {Promise<number[]>} [devFee, maxFee]
      */
-    getFees(): number[] {
-        return this.serializer.decodeCollLong(this.getRegisters()[2]);
+    async getFees(): Promise<number[]> {
+        return await this.serializer.decodeCollLong(this.getRegisters()[2]);
     }
 
     /**
-     * @returns {ErgoTree} dev tree
+     * @returns {Promise<ErgoTree>} dev tree
      */
-    getDevTree(): ErgoTree {
-        return this.serializer.decodeTree(this.getRegisters()[1])
+    async getDevTree(): Promise<ErgoTree> {
+        return await this.serializer.decodeTree(this.getRegisters()[1])
     }
 
     /**
-     * @returns {bigint[]} [neutrons, protons]
+     * @returns {Promise<bigint[]>} [neutrons, protons]
      */
-    getTotalSupply(): bigint[] {
-        return this.serializer.decodeJs(this.getRegisters()[0]).map((x: any) => BigInt(x));
+    async getTotalSupply(): Promise<bigint[]> {
+        const decodedJs = await this.serializer.decodeJs(this.getRegisters()[0]);
+        return decodedJs.map((x: any) => BigInt(x));
     }
 
     /**
@@ -95,15 +96,15 @@ export class GluonBox {
     /**
      * @returns {bigint} neutrons circulating supply
      */
-    getNeutronsCirculatingSupply(): bigint {
-        return this.getTotalSupply()[0] - this.getNeutrons();
+    async getNeutronsCirculatingSupply(): Promise<bigint> {
+        return (await this.getTotalSupply())[0] - this.getNeutrons();
     }
 
     /**
      * @returns {bigint} protons circulating supply
      */
-    getProtonsCirculatingSupply(): bigint {
-        return this.getTotalSupply()[1] - this.getProtons();
+    async getProtonsCirculatingSupply(): Promise<bigint> {
+        return (await this.getTotalSupply())[1] - this.getProtons();
     }
 
     /**
@@ -117,10 +118,10 @@ export class GluonBox {
      * returns the new register by adding the fee to the current fee
      * @param fee fee to add
      */
-    newFeeRegister(fee: number): string {
-        const current = this.getFees()
+    async newFeeRegister(fee: number): Promise<string> {
+        const current = await this.getFees()
         current[0] += fee
-        return this.serializer.encodeTupleLong(current[0], current[1])
+        return await this.serializer.encodeTupleLong(current[0], current[1])
     }
 
     /**
@@ -131,22 +132,23 @@ export class GluonBox {
         return Math.floor(height / 720) * 720;
     }
 
+
     /**
      * returns the new last day of the epoch
      * @param height current height of the blockchain
      */
-    newLastDayRegister(height: number): string {
-        return this.serializer.encodeNumber(this.newLastDay(height))
+    async newLastDayRegister(height: number): Promise<string> {
+        return await this.serializer.encodeNumber(this.newLastDay(height))
     }
 
     /**
      * returns the fusion ratio
      * @param goldOracle gold oracle
      */
-    fusionRatio(goldOracle: GoldOracleBox): bigint {
-        const pricePerGram = goldOracle.getPricePerGram() // this is pt
+    async fusionRatio(goldOracle: GoldOracleBox): Promise<bigint> {
+        const pricePerGram = await goldOracle.getPricePerGram() // this is pt
         const fissionedErg = this.getErgFissioned()
-        const neutronsInCirculation = this.getNeutronsCirculatingSupply()
+        const neutronsInCirculation = await this.getNeutronsCirculatingSupply()
         const rightHandMinVal = (neutronsInCirculation * BigInt(pricePerGram) / BigInt(fissionedErg))
         return rightHandMinVal < this.qstar ? rightHandMinVal : this.qstar
     }
@@ -170,10 +172,10 @@ export class GluonBox {
      * returns the neutron price in nano ERG
      * @param goldOracle gold oracle
      */
-    neutronPrice(goldOracle: GoldOracleBox): bigint {
-        const neutronsInCirculation = this.getNeutronsCirculatingSupply()
+    async neutronPrice(goldOracle: GoldOracleBox): Promise<bigint> {
+        const neutronsInCirculation = await this.getNeutronsCirculatingSupply()
         const fissonedErg = this.getErgFissioned()
-        const fusionRatio = this.fusionRatio(goldOracle)
+        const fusionRatio = await this.fusionRatio(goldOracle)
         return (fusionRatio * BigInt(fissonedErg)) / neutronsInCirculation
     }
 
@@ -181,10 +183,10 @@ export class GluonBox {
      * returns the proton price in nano ERG
      * @param goldOracle gold oracle
      */
-    protonPrice(goldOracle: GoldOracleBox): bigint {
-        const protonsInCirculation = this.getProtonsCirculatingSupply()
+    async protonPrice(goldOracle: GoldOracleBox): Promise<bigint> {
+        const protonsInCirculation = await this.getProtonsCirculatingSupply()
         const fissonedErg = this.getErgFissioned()
-        const fusionRatio = this.fusionRatio(goldOracle)
+        const fusionRatio = await this.fusionRatio(goldOracle)
         const oneMinusFusionRatio = BigInt(1e9) - fusionRatio
         return (oneMinusFusionRatio * BigInt(fissonedErg)) / protonsInCirculation
     }
@@ -194,8 +196,8 @@ export class GluonBox {
      * @param height current height of the blockchain
      * @param curVolume current
      */
-    private newVolume(height: number, curVolume: number[]): number[] {
-        const lastDayHeight = this.getLastDay()
+    private async newVolume(height: number, curVolume: number[]): Promise<number[]> {
+        const lastDayHeight = await this.getLastDay()
         const daysPassed = Math.min(Math.floor((height - lastDayHeight) / 720), BUCKET_LEN)
         let newVol = Array.from({length: daysPassed}, () => 0).concat(curVolume)
         newVol = newVol.slice(0, BUCKET_LEN)
@@ -206,8 +208,8 @@ export class GluonBox {
      * encodes the new volume
      * @param volume to be encoded
      */
-    newVolumeRegister(volume: number[]): string {
-        return this.serializer.encodeCollLong(volume)
+    async newVolumeRegister(volume: number[]): Promise<string> {
+        return await this.serializer.encodeCollLong(volume)
     }
 
     /**
@@ -215,9 +217,9 @@ export class GluonBox {
      * @param height current height of the blockchain
      * @param toAdd volume to be added
      */
-    addVolume(height: number, toAdd: number): number[] {
-        const curVolumePlus = this.getVolumeProtonsToNeutronsArray()
-        const newVol = this.newVolume(height, curVolumePlus)
+    async addVolume(height: number, toAdd: number): Promise<number[]> {
+        const curVolumePlus = await this.getVolumeProtonsToNeutronsArray()
+        const newVol = await this.newVolume(height, curVolumePlus)
         newVol[0] += toAdd
         return newVol
     }
@@ -227,9 +229,9 @@ export class GluonBox {
      * @param height current height of the blockchain
      * @param toDec
      */
-    subVolume(height: number, toDec: number): number[] {
-        const curVolumeMinus = this.getVolumeNeutronsToProtonsArray()
-        const newVol = this.newVolume(height, curVolumeMinus)
+    async subVolume(height: number, toDec: number): Promise<number[]> {
+        const curVolumeMinus = await this.getVolumeNeutronsToProtonsArray()
+        const newVol = await this.newVolume(height, curVolumeMinus)
         newVol[0] += toDec
         return newVol
     }
@@ -238,17 +240,19 @@ export class GluonBox {
      * returns the accumulated volume for the last n days
      * @param days number of days to accumulate (1-BUCKET_LEN)
      */
-    accumulateVolumeProtonsToNeutrons(days: number = BUCKET_LEN): number {
+    async accumulateVolumeProtonsToNeutrons(days: number = BUCKET_LEN): Promise<number> {
         if (days > BUCKET_LEN) throw new Error(`Cannot accumulate volume for more than ${BUCKET_LEN} days`)
-        return this.getVolumeProtonsToNeutronsArray().slice(0, days).reduce((acc, x) => acc + x, 0)
+        const volume = await this.getVolumeProtonsToNeutronsArray()
+        return volume.slice(0, days).reduce((acc, x) => acc + x, 0)
     }
 
     /**
      * returns the accumulated volume for the last n days
      * @param days number of days to accumulate (1-BUCKET_LEN)
      */
-    accumulateVolumeNeutronsToProtons(days: number = BUCKET_LEN): number {
+    async accumulateVolumeNeutronsToProtons(days: number = BUCKET_LEN): Promise<number> {
         if (days > BUCKET_LEN) throw new Error(`Cannot accumulate volume for more than ${BUCKET_LEN} days`)
-        return this.getVolumeNeutronsToProtonsArray().slice(0, days).reduce((acc, x) => acc + x, 0)
+        const volume = await this.getVolumeNeutronsToProtonsArray()
+        return volume.slice(0, days).reduce((acc, x) => acc + x, 0)
     }
 }

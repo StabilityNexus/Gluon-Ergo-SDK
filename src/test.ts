@@ -12,7 +12,7 @@ async function testFission() {
     const gluonBoxJs = await gluon.getGluonBox()
     const amountToFission = 1e9
 
-    return gluon.fissionForEip12(gluonBoxJs, oracleBoxJs, [userBoxJs], amountToFission)
+    return await gluon.fissionForEip12(gluonBoxJs, oracleBoxJs, [userBoxJs], amountToFission)
 }
 
 async function testFusion() {
@@ -22,7 +22,7 @@ async function testFusion() {
     const gluonBoxJs = await gluon.getGluonBox()
     const amountToFusion = 1e8
 
-    return gluon.fusionForEip12(gluonBoxJs, oracleBoxJs, [userBoxJs], amountToFusion)
+    return await gluon.fusionForEip12(gluonBoxJs, oracleBoxJs, [userBoxJs], amountToFusion)
 }
 
 async function testBetaPlus() {
@@ -34,7 +34,7 @@ async function testBetaPlus() {
     const height = await node.getNetworkHeight()
 
     const protonsToTransmute = 5000000
-    return gluon.transmuteToGoldForEip12(gluonBoxJs, oracleBoxJs, [userBoxJs], oracleBuyBackJs, protonsToTransmute, height)
+    return await gluon.transmuteToGoldForEip12(gluonBoxJs, oracleBoxJs, [userBoxJs], oracleBuyBackJs, protonsToTransmute, height)
 }
 
 async function testBetaMinus() {
@@ -47,20 +47,20 @@ async function testBetaMinus() {
     const height = await node.getNetworkHeight()
 
     const neutronsToDecay = 2700000
-    return gluon.transmuteFromGoldForEip12(gluonBoxJs, oracleBoxJs, [userBoxJs], oracleBuyBackJs, neutronsToDecay, height)
+    return await gluon.transmuteFromGoldForEip12(gluonBoxJs, oracleBoxJs, [userBoxJs], oracleBuyBackJs, neutronsToDecay, height)
 }
 
-testFission().then((eip12Tx) => {
-    console.log('Fission:\n')
-    console.log(JSON.stringify(eip12Tx))
-    console.log('\n')
-})
+// testFission().then((eip12Tx) => {
+//     console.log('Fission:\n')
+//     console.log(JSON.stringify(eip12Tx))
+//     console.log('\n')
+// })
 
-testFusion().then((eip12Tx) => {
-    console.log('Fusion:\n')
-    console.log(JSON.stringify(eip12Tx))
-    console.log('\n')
-})
+// testFusion().then((eip12Tx) => {
+//     console.log('Fusion:\n')
+//     console.log(JSON.stringify(eip12Tx))
+//     console.log('\n')
+// })
 
 testBetaPlus().then((eip12Tx) => {
     console.log('Transmute to Gold:\n')

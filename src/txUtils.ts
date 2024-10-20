@@ -1,72 +1,58 @@
-import {
-    Address,
-    BoxId,
-    BoxValue,
-    Constant,
-    Contract,
-    DataInput,
-    DataInputs,
-    ErgoBox,
-    ErgoBoxCandidate,
-    ErgoBoxCandidateBuilder,
-    ErgoBoxCandidates,
-    ErgoBoxes,
-    ErgoStateContext,
-    ErgoTree,
-    I64,
-    NetworkPrefix,
-    ReducedTransaction,
-    SecretKeys,
-    TokenAmount,
-    TokenId,
-    Tokens,
-    Transaction,
-    UnsignedInput,
-    UnsignedInputs,
-    UnsignedTransaction,
-    Wallet
-} from 'ergo-lib-wasm-nodejs'
-import {JSONBI} from "./nodeService";
+import { UnsignedTransaction } from '@nautilus-js/eip12-types'
+import { JSONBI } from "./nodeService";
 
-function getBoxValue(val: any) {
-    return BoxValue.from_i64(I64.from_str(val.toString()))
+let ergolib: any;
+
+if (typeof window !== "undefined") {
+    ergolib = import("ergo-lib-wasm-browser");
+} else {
+    ergolib = import("ergo-lib-wasm-nodejs");
 }
 
-function addressToContract(address: string) {
-    return Contract.pay_to_address(Address.from_mainnet_str(address));
+async function getBoxValue(val: any) {
+    const resolvedLib = await ergolib;
+    return resolvedLib.BoxValue.from_i64(resolvedLib.I64.from_str(val.toString()))
 }
 
-function jsToCandidate(out: any, height: number) {
-    const tree = ErgoTree.from_base16_bytes(out.ergoTree)
-    const address = Address.recreate_from_ergo_tree(tree).to_base58(NetworkPrefix.Mainnet)
-    const myOut = new ErgoBoxCandidateBuilder(getBoxValue(out.value), addressToContract(address), height)
+async function addressToContract(address: string) {
+    const resolvedLib = await ergolib;
+    return resolvedLib.Contract.pay_to_address(resolvedLib.Address.from_mainnet_str(address));
+}
+
+async function jsToCandidate(out: any, height: number) {
+    const resolvedLib = await ergolib;
+    const tree = resolvedLib.ErgoTree.from_base16_bytes(out.ergoTree)
+    const address = resolvedLib.Address.recreate_from_ergo_tree(tree).to_base58(resolvedLib.NetworkPrefix.Mainnet)
+    const boxVal = await getBoxValue(out.value)
+    const contract = await addressToContract(address)
+    const myOut = new resolvedLib.ErgoBoxCandidateBuilder(boxVal, contract, height)
 
     if (out.assets === undefined) out.assets = []
-    out.assets.forEach((i: any) => {
-        const tokAm = TokenAmount.from_i64(I64.from_str(i.amount.toString()))
-        myOut.add_token(TokenId.from_str(i.tokenId), tokAm)
-    })
+    for (const i of out.assets) {
+        const tokAm = resolvedLib.TokenAmount.from_i64(resolvedLib.I64.from_str(i.amount.toString()))
+        myOut.add_token(resolvedLib.TokenId.from_str(i.tokenId), tokAm)
+    }
     if (out.additionalRegisters === undefined)
         out.additionalRegisters = {}
 
     const vals: any = Object.values(out.additionalRegisters)
     for (let i = 0; i < vals.length; i++) {
-        myOut.set_register_value(i + 4, Constant.decode_from_base16(vals[i].toString()))
+        myOut.set_register_value(i + 4, resolvedLib.Constant.decode_from_base16(vals[i].toString()))
     }
     return myOut.build()
 }
 
-function idToBoxId(id: string) {
-    return BoxId.from_str(id)
+async function idToBoxId(id: string) {
+    const resolvedLib = await ergolib;
+    return resolvedLib.BoxId.from_str(id)
 }
-
 
 /**
  * get outbox from tree and value
  * @param tree ergo tree
  * @param ergVal value
  */
-export function getOutBoxJs(tree: string, ergVal: number) {
+export async function getOutBoxJs(tree: string, ergVal: number) {
     return {
         value: ergVal,
         ergoTree: tree,
@@ -95,27 +81,28 @@ function getTokens(assets: any) {
  * @param fee miner fee
  * @param realHeight current height of the blockchain
  */
-export function jsToUnsignedTx(inputs: any, outputs: any, dInputs: any, fee: Number, realHeight: number = 0) {
+export async function jsToUnsignedTx(inputs: any, outputs: any, dInputs: any, fee: Number, realHeight: number = 0) {
+    const resolvedLib = await ergolib;
     var height = Math.max(...inputs.map((i: any) => i.creationHeight))
-    const unsignedInputs = new UnsignedInputs()
+    const unsignedInputs = new resolvedLib.UnsignedInputs()
     for (const box of inputs) {
-        const unsignedInput = UnsignedInput.from_box_id(idToBoxId(box.boxId))
+        const unsignedInput = resolvedLib.UnsignedInput.from_box_id(await idToBoxId(box.boxId))
         unsignedInputs.add(unsignedInput)
     }
 
-    const dataInputs = new DataInputs()
+    const dataInputs = new resolvedLib.DataInputs()
     for (const d of dInputs)
-        dataInputs.add(new DataInput(idToBoxId(d.boxId)))
+        dataInputs.add(new resolvedLib.DataInput(await idToBoxId(d.boxId)))
 
-    const unsignedOutputs = ErgoBoxCandidates.empty()
-    outputs.forEach((i: any) => {
-        const box = jsToCandidate(i, height)
+    const unsignedOutputs = resolvedLib.ErgoBoxCandidates.empty()
+    for (const i of outputs) {
+        const box = await jsToCandidate(i, height)
         unsignedOutputs.add(box)
-    })
-    const feeBox = ErgoBoxCandidate.new_miner_fee_box(getBoxValue(fee), height)
+    }
+    const feeBox = resolvedLib.ErgoBoxCandidate.new_miner_fee_box(await getBoxValue(fee), height)
     unsignedOutputs.add(feeBox)
 
-    const unsignedTx = new UnsignedTransaction(unsignedInputs, dataInputs, unsignedOutputs)
+    const unsignedTx = new resolvedLib.UnsignedTransaction(unsignedInputs, dataInputs, unsignedOutputs)
     return unsignedTx
 }
 
@@ -143,7 +130,7 @@ export function getChangeBoxJs(ins: any, outs: any, changeTree: string, fee: num
         }
     })
     let assets = Object.keys(inTokens).map((tokenId) => {
-        return {tokenId, amount: inTokens[tokenId]}
+        return { tokenId, amount: inTokens[tokenId] }
     }).filter((i: any) => i.amount > 0)
 
     if (inVal - outVal - fee < 0 || Object.values(inTokens).filter((i: any) => i < 0).length > 0) {
@@ -167,9 +154,10 @@ export function getChangeBoxJs(ins: any, outs: any, changeTree: string, fee: num
  * @param dataInptus data inputs
  * @param ctx ErgoStateContext
  */
-export function signTx(unsignedTx: UnsignedTransaction, boxes: ErgoBoxes, dataInptus: ErgoBoxes, ctx: ErgoStateContext): Transaction {
-    const wallet = Wallet.from_secrets(new SecretKeys())
-    return wallet.sign_transaction(ctx, unsignedTx, boxes, dataInptus)
+export async function signTx(unsignedTx: UnsignedTransaction, boxes: any, dataInputs: any, ctx: any): Promise<any> {
+    const resolvedLib = await ergolib;
+    const wallet = resolvedLib.Wallet.from_secrets(new resolvedLib.SecretKeys())
+    return wallet.sign_transaction(ctx, unsignedTx, boxes, dataInputs)
 }
 
 /**
@@ -179,27 +167,28 @@ export function signTx(unsignedTx: UnsignedTransaction, boxes: ErgoBoxes, dataIn
  * @param dataInptusJs data inputs to the tx
  * @param ctx ErgoStateContext
  */
-export function signTxJs(inputsJs: any, outsJs: any, dataInptusJs: any, ctx: ErgoStateContext): Transaction {
+export async function signTxJs(inputsJs: any, outsJs: any, dataInputsJs: any, ctx: any): Promise<any> {
+    const resolvedLib = await ergolib;
     const inVal = inputsJs.reduce((acc: number, i: any) => acc + Number(i.value), 0)
     const outVal = outsJs.reduce((acc: number, i: any) => acc + Number(i.value), 0)
     const rFee = inVal - outVal
 
-
-    const unsignedTx = jsToUnsignedTx(inputsJs, outsJs, dataInptusJs, rFee)
-    const boxes = ErgoBoxes.empty()
-    inputsJs.forEach((i: any) => {
-        const box = ErgoBox.from_json(JSONBI.stringify(i))
+    const unsignedTx = await jsToUnsignedTx(inputsJs, outsJs, dataInputsJs, rFee)
+    const boxes = resolvedLib.ErgoBoxes.empty()
+    for (const i of inputsJs) {
+        const box = resolvedLib.ErgoBox.from_json(JSONBI.stringify(i))
         boxes.add(box)
-    })
-    const dataInputs = ErgoBoxes.from_boxes_json(dataInptusJs)
+    }
+    const dataInputs = resolvedLib.ErgoBoxes.from_boxes_json(dataInputsJs)
     return signTx(unsignedTx, boxes, dataInputs, ctx)
 }
 
-export function unsignedToEip12Tx(tx: UnsignedTransaction, ins: any, dataInput: any): any {
+export async function unsignedToEip12Tx(tx: any, ins: any, dataInput: any): Promise<any> {
+    const resolvedLib = await ergolib;
     const txJs = tx.to_js_eip12()
     for (let i = 0; i < txJs.inputs.length; i++) {
         const prevExtension = txJs.inputs[i].extension
-        txJs.inputs[i] = ErgoBox.from_json(JSONBI.stringify(ins[i])).to_js_eip12()
+        txJs.inputs[i] = resolvedLib.ErgoBox.from_json(JSONBI.stringify(ins[i])).to_js_eip12()
         if (prevExtension !== undefined)
             txJs.inputs[i].extension = prevExtension
     }
@@ -207,9 +196,8 @@ export function unsignedToEip12Tx(tx: UnsignedTransaction, ins: any, dataInput: 
         if (txJs.outputs[i].extension === undefined)
             txJs.outputs[i].extension = {}
 
-    txJs.dataInputs[0] = ErgoBox.from_json(JSONBI.stringify(dataInput)).to_js_eip12()
+    txJs.dataInputs[0] = resolvedLib.ErgoBox.from_json(JSONBI.stringify(dataInput)).to_js_eip12()
     txJs.dataInputs[0].extension = {}
 
     return txJs
 }
-

@@ -1,7 +1,13 @@
 import axios, { AxiosInstance } from 'axios'
 import JSONbig from 'json-bigint';
-import {BlockHeaders, ErgoStateContext, PreHeader} from "ergo-lib-wasm-nodejs";
 export const JSONBI = JSONbig({useNativeBigInt: true})
+let ergolib: any;
+
+if (typeof window !== "undefined") {
+    ergolib = import("ergo-lib-wasm-browser");
+} else {
+    ergolib = import("ergo-lib-wasm-nodejs");
+}
 
 
 export class NodeService {
@@ -218,8 +224,8 @@ export class NodeService {
 
     async getCtx() {
         const height = await this.getNetworkHeight()
-        const blockHeaders = BlockHeaders.from_json(await this.chainSliceInfo(height))
-        const pre_header = PreHeader.from_block_header(blockHeaders.get(blockHeaders.len() - 1))
-        return new ErgoStateContext(pre_header, blockHeaders);
+        const blockHeaders = (await ergolib).BlockHeaders.from_json(await this.chainSliceInfo(height))
+        const pre_header = (await ergolib).PreHeader.from_block_header(blockHeaders.get(blockHeaders.len() - 1))
+        return new (await ergolib).ErgoStateContext(pre_header, blockHeaders);
     }
 }

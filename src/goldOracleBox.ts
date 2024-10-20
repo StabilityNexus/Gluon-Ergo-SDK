@@ -1,6 +1,4 @@
-import {ErgoTree} from "ergo-lib-wasm-nodejs";
 import {Serializer} from "./serializer";
-import {NEUTRON_ID, PROTON_ID} from "./consts";
 
 export class GoldOracleBox {
     boxJs: any;
@@ -23,16 +21,17 @@ export class GoldOracleBox {
     /**
      * returns gold price for 1 kg
      */
-    getPrice(): number {
-        return Number(this.serializer.decodeJs(this.getRegisters()[0]));
+    async getPrice(): Promise<number> {
+        const registers = this.getRegisters();
+        const decodedValue = await this.serializer.decodeJs(registers[0]);
+        return Number(decodedValue);
     }
 
     /**
      * returns gold price for 1 gram
      */
-    getPricePerGram(): number {
-        return Math.floor(this.getPrice() / 1000);
+    async getPricePerGram(): Promise<number> {
+        const price = await this.getPrice();
+        return Math.floor(price / 1000);
     }
-
-
 }

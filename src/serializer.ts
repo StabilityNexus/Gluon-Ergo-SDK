@@ -1,55 +1,62 @@
-import {Address, Constant, ErgoTree, I64, NetworkPrefix} from 'ergo-lib-wasm-nodejs'
+import {ErgoTree} from '@nautilus-js/eip12-types'
 import { NETWORK } from './consts'
 
+let ergolib: any;
+
+if (typeof window !== "undefined") {
+    ergolib = import("ergo-lib-wasm-browser");
+} else {
+    ergolib = import("ergo-lib-wasm-nodejs");
+}
+
 export class Serializer {
-    networkPrefix = NETWORK === 'mainnet' ? NetworkPrefix.Testnet : NetworkPrefix.Mainnet
+    networkPrefix = NETWORK === 'mainnet' ? 0 : 1;
     constructor(
     ) { }
 
-    decodeTree(encodedTree: string): ErgoTree {
-        const byteArray = Constant.decode_from_base16(encodedTree).to_byte_array()
-        return ErgoTree.from_bytes(byteArray)
+    async decodeTree(encodedTree: string): Promise<ErgoTree> {
+        const byteArray = (await ergolib).Constant.decode_from_base16(encodedTree).to_byte_array()
+        return (await ergolib).ErgoTree.from_bytes(byteArray)
     }
 
-
-    treeToAddrs(tree: ErgoTree): string {
-        return Address.recreate_from_ergo_tree(tree).to_base58(this.networkPrefix)
+    async treeToAddrs(tree: ErgoTree): Promise<string> {
+        return (await ergolib).Address.recreate_from_ergo_tree(tree).to_base58(this.networkPrefix)
     }
 
-    encodeNumber(num: number): string {
-        const num64 = I64.from_str(num.toString())
-        return Constant.from_i64(num64).encode_to_base16()
+    async encodeNumber(num: number): Promise<string> {
+        const num64 = (await ergolib).I64.from_str(num.toString())
+        return (await ergolib).Constant.from_i64(num64).encode_to_base16()
     }
 
-    decodeCollLong(encodedColl: string): any {
-        return Constant.decode_from_base16(encodedColl).to_js().map((x: any) => Number(x))
+    async decodeCollLong(encodedColl: string): Promise<number[]> {
+        return (await ergolib).Constant.decode_from_base16(encodedColl).to_js().map((x: any) => Number(x))
     }
 
-    encodeCollLong(coll: number[]): string {
+    async encodeCollLong(coll: number[]): Promise<string> {
         const collStr = coll.map((x: number) => x.toString())
-        return Constant.from_i64_str_array(collStr).encode_to_base16()
+        return (await ergolib).Constant.from_i64_str_array(collStr).encode_to_base16()
     }
 
-    encodeTupleLong(a: number, b: number): string {
-        const a64 = I64.from_str(a.toString())
-        const b64 = I64.from_str(b.toString())
-        return Constant.from_tuple_i64(a64, b64).encode_to_base16()
+    async encodeTupleLong(a: number, b: number): Promise<string> {
+        const a64 = (await ergolib).I64.from_str(a.toString())
+        const b64 = (await ergolib).I64.from_str(b.toString())
+        return (await ergolib).Constant.from_tuple_i64(a64, b64).encode_to_base16()
     }
 
-    decodeCollByte(encodedColl: string): any {
-        return Constant.decode_from_base16(encodedColl).to_js().map((x: any) => Buffer.from(x).toString('hex'))
+    async decodeCollByte(encodedColl: string): Promise<string[]> {
+        return (await ergolib).Constant.decode_from_base16(encodedColl).to_js().map((x: any) => Buffer.from(x).toString('hex'))
     }
 
-    decodeJs(encodedColl: string): any {
-        return Constant.decode_from_base16(encodedColl).to_js()
+    async decodeJs(encodedColl: string): Promise<any> {
+        return (await ergolib).Constant.decode_from_base16(encodedColl).to_js()
     }
 
-    decodeId(encodedId: string): string {
-        const bytes = Constant.decode_from_base16(encodedId).to_byte_array()
+    async decodeId(encodedId: string): Promise<string> {
+        const bytes = (await ergolib).Constant.decode_from_base16(encodedId).to_byte_array()
         return Buffer.from(bytes).toString('hex')
     }
 
-    encodeId(id: string): string {
-        return Constant.from_byte_array(Buffer.from(id, 'hex')).encode_to_base16()
+    async encodeId(id: string): Promise<string> {
+        return (await ergolib).Constant.from_byte_array(Buffer.from(id, 'hex')).encode_to_base16()
     }
 }

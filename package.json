@@ -14,12 +14,12 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@nautilus-js/eip12-types": "^0.1.9",
     "@types/json-bigint": "^1.0.4",
     "@types/node": "^20.14.12",
     "@typescript-eslint/eslint-plugin": "^7.17.0",
     "@typescript-eslint/parser": "^7.17.0",
     "axios": "^1.7.3",
-    "ergo-lib-wasm-nodejs": "^0.26.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
@@ -29,6 +29,8 @@
   },
   "dependencies": {
     "@types/json-bigint": "^1.0.4",
+    "ergo-lib-wasm-browser": "^0.23.0",
+    "ergo-lib-wasm-nodejs": "^0.23.0",
     "axios": "^1.7.3",
     "json-bigint": "^1.0.0"
   }
