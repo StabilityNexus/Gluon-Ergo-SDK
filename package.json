@@ -1,5 +1,5 @@
 {
-  "name": "gluon-sdk",
+  "name": "gluon-gold-sdk",
   "version": "1.0.0",
   "description": "A SDK for the Gluon Gold protocol",
   "main": "dist/index.js",

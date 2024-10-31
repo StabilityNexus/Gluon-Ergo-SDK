@@ -5,9 +5,7 @@ This SDK is meant to facilitate the interaction with the Gluon protocol.
 ### Installation
 
 ```bash
-git clone https://github.com/StabilityNexus/Gluon-Ergo-SDK
-cd Gluon-Ergo-SDK
-npm install
+npm install gluon-gold-sdk
 ```
 
 ### Implemented Features
