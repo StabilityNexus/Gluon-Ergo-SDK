@@ -110,3 +110,9 @@ const feesPercentage = await gluon.getFeePercentageTransmuteToGold(gluonBox, ora
 console.log(fees.devFee, fees.uiFee, fees.oracleFee, fees.totalFee)
 console.log(feesPercentage.devFee, feesPercentage.uiFee, feesPercentage.oracleFee, feesPercentage.totalFee)
 // transmute from gold is similar
+
+// TVL (total value locked) in nanoERG
+const tvl = await gluon.getTVL(gluonBox, oracleBox)
+
+// Reserve ratio in percentage
+const reserveRatio = await gluon.getReserveRatio(gluonBox, oracleBox)

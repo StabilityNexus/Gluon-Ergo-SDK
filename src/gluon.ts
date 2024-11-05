@@ -519,4 +519,44 @@ export class Gluon {
         const buybackJs = await this.nodeService.getUnspentBoxByTokenId(this.config.ORACLE_BUYBACK_NFT)
         return buybackJs[0]
     }
+
+    /**
+     * Calculate the Total Value Locked (TVL) in the protocol
+     * @param gluonBox - input gluon box
+     * @param goldOracleBox - gold oracle box
+     * @returns The total value locked in nanoERG
+     */
+    async getTVL(gluonBox: GluonBox, goldOracleBox: GoldOracleBox): Promise<bigint> {
+        const neutronPrice = await gluonBox.neutronPrice(goldOracleBox)
+        const protonPrice = await gluonBox.protonPrice(goldOracleBox)
+
+        const neutronSupply = await gluonBox.getNeutronsCirculatingSupply()
+        const protonSupply = await gluonBox.getProtonsCirculatingSupply()
+
+        const neutronValue = (neutronPrice * neutronSupply) / BigInt(1e9)
+        const protonValue = (protonPrice * protonSupply) / BigInt(1e9)
+        console.log(protonValue / BigInt(1e9))
+        console.log(neutronValue / BigInt(1e9))
+
+        return neutronValue + protonValue
+    }
+
+    /**
+     * Calculate the reserve ratio of the protocol (proton value / neutron value)
+     * @param gluonBox - input gluon box
+     * @param goldOracleBox - gold oracle box
+     * @returns The reserve ratio in percentage
+     */
+    async getReserveRatio(gluonBox: GluonBox, goldOracleBox: GoldOracleBox): Promise<number> {
+        const neutronPrice = await gluonBox.neutronPrice(goldOracleBox)
+        const protonPrice = await gluonBox.protonPrice(goldOracleBox)
+
+        const neutronSupply = await gluonBox.getNeutronsCirculatingSupply()
+        const protonSupply = await gluonBox.getProtonsCirculatingSupply()
+
+        const neutronValue = (neutronPrice * neutronSupply) / BigInt(1e9)
+        const protonValue = (protonPrice * protonSupply) / BigInt(1e9)
+
+        return Number(protonValue) / Number(neutronValue) * 100
+    }
 }

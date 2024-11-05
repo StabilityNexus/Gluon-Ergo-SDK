@@ -50,6 +50,22 @@ async function testBetaMinus() {
     return await gluon.transmuteFromGoldForEip12(gluonBoxJs, oracleBoxJs, [userBoxJs], oracleBuyBackJs, neutronsToDecay, height)
 }
 
+async function testTVL() {
+    const gluon = new Gluon()
+    const gluonBoxJs = await gluon.getGluonBox()
+    const oracleBoxJs = await gluon.getGoldOracleBox()
+    return await gluon.getTVL(gluonBoxJs, oracleBoxJs)
+}
+
+async function testFusionRatio() {
+    const gluon = new Gluon()
+    const gluonBox = await gluon.getGluonBox()
+    const oracleBox = await gluon.getGoldOracleBox()
+
+    return await gluon.getReserveRatio(gluonBox, oracleBox)
+}
+
+
 // testFission().then((eip12Tx) => {
 //     console.log('Fission:\n')
 //     console.log(JSON.stringify(eip12Tx))
@@ -62,14 +78,26 @@ async function testBetaMinus() {
 //     console.log('\n')
 // })
 
-testBetaPlus().then((eip12Tx) => {
-    console.log('Transmute to Gold:\n')
-    console.log(JSON.stringify(eip12Tx))
+// testBetaPlus().then((eip12Tx) => {
+//     console.log('Transmute to Gold:\n')
+//     console.log(JSON.stringify(eip12Tx))
+//     console.log('\n')
+// })
+
+// testBetaMinus().then((eip12Tx) => {
+//     console.log('Transmute from Gold:\n')
+//     console.log(JSON.stringify(eip12Tx))
+//     console.log('\n')
+// })
+
+testTVL().then((tvl) => {
+    console.log('TVL:\n')
+    console.log(Number(tvl) / 1e9)
     console.log('\n')
 })
 
-testBetaMinus().then((eip12Tx) => {
-    console.log('Transmute from Gold:\n')
-    console.log(JSON.stringify(eip12Tx))
+testFusionRatio().then((ratio) => {
+    console.log('Fusion Ratio:\n')
+    console.log(Number(ratio))
     console.log('\n')
 })
