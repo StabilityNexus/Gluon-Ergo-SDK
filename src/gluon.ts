@@ -13,6 +13,25 @@ if (typeof window !== "undefined") {
     ergolib = import("ergo-lib-wasm-nodejs");
 }
 
+export interface MarketDataResult {
+  GAU: TokenMarketData;
+  GAUC: TokenMarketData;
+}
+
+export interface TokenMarketData {
+  price?: number | null;
+  marketcap?: number | null;
+  liquidity?: number | null;
+  volume24h?: number | null;
+  volume7d?: number | null;
+  volume1m?: number | null;
+  volume1y?: number | null;
+  volumeAll?: number | null;
+  priceHistory7d?: { date: string; value: number }[] | null;
+  priceHistory30d?: { date: string; value: number }[] | null;
+  holders?: number | null;
+}
+
 export class Gluon {
     config: Config;
     nodeService: NodeService
@@ -575,4 +594,139 @@ export class Gluon {
 
         return 100 * (Number(protonValue) + Number(neutronValue)) / Number(neutronValue)
     }
+
+    /**
+     * Shifts the volume array to account for elapsed days since the last transmutation.
+     * If elapsedDays <= 0, returns the original array.
+     * If elapsedDays >= 14, returns an array of 14 zeros.
+     * Otherwise, drops the oldest elapsedDays entries and appends elapsedDays zeros.
+     * @param volumes The raw 14-day volume array from the box.
+     * @param elapsedDays The number of days elapsed since the last update.
+     * @returns The shifted volume array.
+     */
+    private shiftVolumeArray(volumes: number[], elapsedDays: number): number[] {
+        if (elapsedDays <= 0) return volumes;
+        if (elapsedDays >= 14) return new Array(14).fill(0);
+        // Shift by dropping oldest entries and appending zeros
+        return volumes.slice(elapsedDays).concat(new Array(elapsedDays).fill(0));
+    }
+
+    /**
+     * Returns the up-to-date 14-day volume array for Protons to Neutrons by shifting based on elapsed time.
+     * @returns Promise<number[]> The shifted 14-day volume array.
+     */
+    async getUpToDate14DaysVolumeProtonsToNeutrons(): Promise<number[]> {
+        const gluonBox = await this.getGluonBox();
+        const lastDay = await gluonBox.getLastDay();
+        const currentHeight = await this.nodeService.getNetworkHeight();
+        const currentDay = Math.floor(currentHeight / 720);
+        const elapsedDays = Math.max(0, currentDay - lastDay);
+        const rawVolumes = await gluonBox.getVolumeProtonsToNeutronsArray();
+        return this.shiftVolumeArray(rawVolumes, elapsedDays);
+    }
+
+    /**
+     * Returns the up-to-date 14-day volume array for Neutrons to Protons by shifting based on elapsed time.
+     * @returns Promise<number[]> The shifted 14-day volume array.
+     */
+    async getUpToDate14DaysVolumeNeutronsToProtons(): Promise<number[]> {
+        const gluonBox = await this.getGluonBox();
+        const lastDay = await gluonBox.getLastDay();
+        const currentHeight = await this.nodeService.getNetworkHeight();
+        const currentDay = Math.floor(currentHeight / 720);
+        const elapsedDays = Math.max(0, currentDay - lastDay);
+        const rawVolumes = await gluonBox.getVolumeNeutronsToProtonsArray();
+        return this.shiftVolumeArray(rawVolumes, elapsedDays);
+    }
+
+    /**
+     * Accumulates the up-to-date volume for Protons to Neutrons over the specified number of days.
+     * @param days The number of days to accumulate (1-14).
+     * @returns Promise<number> The accumulated volume.
+     */
+    async accumulateUpToDateVolumeProtonsToNeutrons(days: number): Promise<number> {
+        if (days > 14 || days < 1) throw new Error(`Days must be between 1 and 14`);
+        const volumes = await this.getUpToDate14DaysVolumeProtonsToNeutrons();
+        return volumes.slice(0, days).reduce((acc, x) => acc + x, 0);
+    }
+
+    /**
+     * Accumulates the up-to-date volume for Neutrons to Protons over the specified number of days.
+     * @param days The number of days to accumulate (1-14).
+     * @returns Promise<number> The accumulated volume.
+     */
+    async accumulateUpToDateVolumeNeutronsToProtons(days: number): Promise<number> {
+        if (days > 14 || days < 1) throw new Error(`Days must be between 1 and 14`);
+        const volumes = await this.getUpToDate14DaysVolumeNeutronsToProtons();
+        return volumes.slice(0, days).reduce((acc, x) => acc + x, 0);
+    }
+
+    /**
+     * Get market data for GAU and GAUC tokens.
+     * @param options - Optional object specifying which fields to include. If undefined, all fields are included.
+     * @returns Promise<MarketDataResult> The market data for GAU and GAUC.
+     */
+    async getMarketData(options?: {
+        marketcap?: boolean;
+        liquidity?: boolean;
+        volume24h?: boolean;
+        volume7d?: boolean;
+        volume1m?: boolean;
+        volume1y?: boolean;
+        volumeAll?: boolean;
+        price?: boolean;
+        priceHistory7d?: boolean;
+        priceHistory30d?: boolean;
+        holders?: boolean;
+    }): Promise<MarketDataResult> {
+        const gluonBox = await this.getGluonBox();
+        const goldOracleBox = await this.getGoldOracleBox();
+
+        const neutronPrice = Number(await gluonBox.neutronPrice(goldOracleBox)) / 1e9;
+        const protonPrice = Number(await gluonBox.protonPrice(goldOracleBox)) / 1e9;
+
+        const neutronSupply = Number(await gluonBox.getNeutronsCirculatingSupply()) / 1e9;
+        const protonSupply = Number(await gluonBox.getProtonsCirculatingSupply()) / 1e9;
+
+        // Determine which fields to include
+        const includeAll = !options;
+        const includePrice = includeAll || options.price;
+        const includeMarketcap = includeAll || options.marketcap;
+        const includeLiquidity = includeAll || options.liquidity;
+        const includeVolume24h = includeAll || options.volume24h;
+        const includeVolume7d = includeAll || options.volume7d;
+        const includeVolume1m = includeAll || options.volume1m;
+        const includeVolume1y = includeAll || options.volume1y;
+        const includeVolumeAll = includeAll || options.volumeAll;
+        const includePriceHistory7d = includeAll || options.priceHistory7d;
+        const includePriceHistory30d = includeAll || options.priceHistory30d;
+        const includeHolders = includeAll || options.holders;
+
+        // Get volumes
+        const neutronVolumes = await this.getUpToDate14DaysVolumeNeutronsToProtons(); // for GAU
+        const protonVolumes = await this.getUpToDate14DaysVolumeProtonsToNeutrons(); // for GAUC
+
+        const buildTokenData = (price: number, supply: number, volumes: number[]): TokenMarketData => {
+            const data: TokenMarketData = {};
+            if (includePrice) data.price = price;
+            if (includeMarketcap) data.marketcap = price * supply; // Market cap = price * circulating supply
+            if (includeLiquidity) data.liquidity = price * supply; // Liquidity = value of circulating supply
+            if (includeVolume24h) data.volume24h = volumes[volumes.length - 1] || 0; // Last day's volume
+            if (includeVolume7d) data.volume7d = volumes.slice(-7).reduce((acc, x) => acc + x, 0); // Sum of last 7 days
+            if (includeVolume1m) data.volume1m = null; // Not available (only 14 days)
+            if (includeVolume1y) data.volume1y = null; // Not available
+            if (includeVolumeAll) data.volumeAll = null; // Not available
+            if (includePriceHistory7d) data.priceHistory7d = null; // No historical data
+            if (includePriceHistory30d) data.priceHistory30d = null; // No historical data
+            if (includeHolders) data.holders = null; // Best-effort, but not implemented
+            return data;
+        };
+
+        return {
+            GAU: buildTokenData(neutronPrice, neutronSupply, neutronVolumes),
+            GAUC: buildTokenData(protonPrice, protonSupply, protonVolumes),
+        };
+    }
 }
+
+
