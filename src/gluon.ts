@@ -13,6 +13,25 @@ if (typeof window !== "undefined") {
     ergolib = import("ergo-lib-wasm-nodejs");
 }
 
+export interface MarketDataResult {
+  GAU: TokenMarketData;
+  GAUC: TokenMarketData;
+}
+
+export interface TokenMarketData {
+  price?: number | null;
+  marketcap?: number | null;
+  liquidity?: number | null;
+  volume24h?: number | null;
+  volume7d?: number | null;
+  volume1m?: number | null;
+  volume1y?: number | null;
+  volumeAll?: number | null;
+  priceHistory7d?: { date: string; value: number }[] | null;
+  priceHistory30d?: { date: string; value: number }[] | null;
+  holders?: number | null;
+}
+
 export class Gluon {
     config: Config;
     nodeService: NodeService
@@ -640,6 +659,73 @@ export class Gluon {
         if (days > 14 || days < 1) throw new Error(`Days must be between 1 and 14`);
         const volumes = await this.getUpToDate14DaysVolumeNeutronsToProtons();
         return volumes.slice(0, days).reduce((acc, x) => acc + x, 0);
+    }
+
+    /**
+     * Get market data for GAU and GAUC tokens.
+     * @param options - Optional object specifying which fields to include. If undefined, all fields are included.
+     * @returns Promise<MarketDataResult> The market data for GAU and GAUC.
+     */
+    async getMarketData(options?: {
+        marketcap?: boolean;
+        liquidity?: boolean;
+        volume24h?: boolean;
+        volume7d?: boolean;
+        volume1m?: boolean;
+        volume1y?: boolean;
+        volumeAll?: boolean;
+        price?: boolean;
+        priceHistory7d?: boolean;
+        priceHistory30d?: boolean;
+        holders?: boolean;
+    }): Promise<MarketDataResult> {
+        const gluonBox = await this.getGluonBox();
+        const goldOracleBox = await this.getGoldOracleBox();
+
+        const neutronPrice = Number(await gluonBox.neutronPrice(goldOracleBox)) / 1e9;
+        const protonPrice = Number(await gluonBox.protonPrice(goldOracleBox)) / 1e9;
+
+        const neutronSupply = Number(await gluonBox.getNeutronsCirculatingSupply()) / 1e9;
+        const protonSupply = Number(await gluonBox.getProtonsCirculatingSupply()) / 1e9;
+
+        // Determine which fields to include
+        const includeAll = !options;
+        const includePrice = includeAll || options.price;
+        const includeMarketcap = includeAll || options.marketcap;
+        const includeLiquidity = includeAll || options.liquidity;
+        const includeVolume24h = includeAll || options.volume24h;
+        const includeVolume7d = includeAll || options.volume7d;
+        const includeVolume1m = includeAll || options.volume1m;
+        const includeVolume1y = includeAll || options.volume1y;
+        const includeVolumeAll = includeAll || options.volumeAll;
+        const includePriceHistory7d = includeAll || options.priceHistory7d;
+        const includePriceHistory30d = includeAll || options.priceHistory30d;
+        const includeHolders = includeAll || options.holders;
+
+        // Get volumes
+        const neutronVolumes = await this.getUpToDate14DaysVolumeNeutronsToProtons(); // for GAU
+        const protonVolumes = await this.getUpToDate14DaysVolumeProtonsToNeutrons(); // for GAUC
+
+        const buildTokenData = (price: number, supply: number, volumes: number[]): TokenMarketData => {
+            const data: TokenMarketData = {};
+            if (includePrice) data.price = price;
+            if (includeMarketcap) data.marketcap = price * supply; // Market cap = price * circulating supply
+            if (includeLiquidity) data.liquidity = price * supply; // Liquidity = value of circulating supply
+            if (includeVolume24h) data.volume24h = volumes[volumes.length - 1] || 0; // Last day's volume
+            if (includeVolume7d) data.volume7d = volumes.slice(-7).reduce((acc, x) => acc + x, 0); // Sum of last 7 days
+            if (includeVolume1m) data.volume1m = null; // Not available (only 14 days)
+            if (includeVolume1y) data.volume1y = null; // Not available
+            if (includeVolumeAll) data.volumeAll = null; // Not available
+            if (includePriceHistory7d) data.priceHistory7d = null; // No historical data
+            if (includePriceHistory30d) data.priceHistory30d = null; // No historical data
+            if (includeHolders) data.holders = null; // Best-effort, but not implemented
+            return data;
+        };
+
+        return {
+            GAU: buildTokenData(neutronPrice, neutronSupply, neutronVolumes),
+            GAUC: buildTokenData(protonPrice, protonSupply, protonVolumes),
+        };
     }
 }
 
