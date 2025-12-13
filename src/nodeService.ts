@@ -63,7 +63,7 @@ export class NodeService {
 
     async getUnspentBoxByTokenId(tokenId: string, offset?: number, limit?: number) {
         return this.get(
-            `/blockchain/box/unspent/byTokenId/${tokenId}`
+            `/boxes/unspent/byTokenId/${tokenId}`
         )
     }
 
@@ -136,8 +136,8 @@ export class NodeService {
     }
 
     async getNetworkHeight(): Promise<number> {
-        const info = await this.get(`/info`);
-        return info.fullHeight
+        const data = await this.get(`/blocks?limit=1`);
+        return data[0].height
     }
 
     async getNetworkIndexedHeight(): Promise<number> {
@@ -187,7 +187,7 @@ export class NodeService {
     }
 
     async getBoxById(Id: string) {
-        const data = await this.get(`/blockchain/box/byId/${Id}`)
+        const data = await this.get(`/boxes/${Id}`)
         return data
     }
 
