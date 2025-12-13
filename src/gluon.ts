@@ -575,4 +575,72 @@ export class Gluon {
 
         return 100 * (Number(protonValue) + Number(neutronValue)) / Number(neutronValue)
     }
+
+    /**
+     * Shifts the volume array to account for elapsed days since the last transmutation.
+     * If elapsedDays <= 0, returns the original array.
+     * If elapsedDays >= 14, returns an array of 14 zeros.
+     * Otherwise, drops the oldest elapsedDays entries and appends elapsedDays zeros.
+     * @param volumes The raw 14-day volume array from the box.
+     * @param elapsedDays The number of days elapsed since the last update.
+     * @returns The shifted volume array.
+     */
+    private shiftVolumeArray(volumes: number[], elapsedDays: number): number[] {
+        if (elapsedDays <= 0) return volumes;
+        if (elapsedDays >= 14) return new Array(14).fill(0);
+        // Shift by dropping oldest entries and appending zeros
+        return volumes.slice(elapsedDays).concat(new Array(elapsedDays).fill(0));
+    }
+
+    /**
+     * Returns the up-to-date 14-day volume array for Protons to Neutrons by shifting based on elapsed time.
+     * @returns Promise<number[]> The shifted 14-day volume array.
+     */
+    async getUpToDate14DaysVolumeProtonsToNeutrons(): Promise<number[]> {
+        const gluonBox = await this.getGluonBox();
+        const lastDay = await gluonBox.getLastDay();
+        const currentHeight = await this.nodeService.getNetworkHeight();
+        const currentDay = Math.floor(currentHeight / 720);
+        const elapsedDays = Math.max(0, currentDay - lastDay);
+        const rawVolumes = await gluonBox.getVolumeProtonsToNeutronsArray();
+        return this.shiftVolumeArray(rawVolumes, elapsedDays);
+    }
+
+    /**
+     * Returns the up-to-date 14-day volume array for Neutrons to Protons by shifting based on elapsed time.
+     * @returns Promise<number[]> The shifted 14-day volume array.
+     */
+    async getUpToDate14DaysVolumeNeutronsToProtons(): Promise<number[]> {
+        const gluonBox = await this.getGluonBox();
+        const lastDay = await gluonBox.getLastDay();
+        const currentHeight = await this.nodeService.getNetworkHeight();
+        const currentDay = Math.floor(currentHeight / 720);
+        const elapsedDays = Math.max(0, currentDay - lastDay);
+        const rawVolumes = await gluonBox.getVolumeNeutronsToProtonsArray();
+        return this.shiftVolumeArray(rawVolumes, elapsedDays);
+    }
+
+    /**
+     * Accumulates the up-to-date volume for Protons to Neutrons over the specified number of days.
+     * @param days The number of days to accumulate (1-14).
+     * @returns Promise<number> The accumulated volume.
+     */
+    async accumulateUpToDateVolumeProtonsToNeutrons(days: number): Promise<number> {
+        if (days > 14 || days < 1) throw new Error(`Days must be between 1 and 14`);
+        const volumes = await this.getUpToDate14DaysVolumeProtonsToNeutrons();
+        return volumes.slice(0, days).reduce((acc, x) => acc + x, 0);
+    }
+
+    /**
+     * Accumulates the up-to-date volume for Neutrons to Protons over the specified number of days.
+     * @param days The number of days to accumulate (1-14).
+     * @returns Promise<number> The accumulated volume.
+     */
+    async accumulateUpToDateVolumeNeutronsToProtons(days: number): Promise<number> {
+        if (days > 14 || days < 1) throw new Error(`Days must be between 1 and 14`);
+        const volumes = await this.getUpToDate14DaysVolumeNeutronsToProtons();
+        return volumes.slice(0, days).reduce((acc, x) => acc + x, 0);
+    }
 }
+
+
