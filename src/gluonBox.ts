@@ -10,6 +10,22 @@ export class GluonBox {
 
     constructor(box: any) {
         this.boxJs = box;
+        // Normalize additionalRegisters to object format
+        if (this.boxJs.additionalRegisters) {
+            if (Array.isArray(this.boxJs.additionalRegisters)) {
+                const regs: any = {};
+                const regNames = ['R4', 'R5', 'R6', 'R7', 'R8', 'R9'];
+                this.boxJs.additionalRegisters.forEach((value: string, index: number) => {
+                    if (regNames[index]) {
+                        regs[regNames[index]] = value;
+                    }
+                });
+                this.boxJs.additionalRegisters = regs;
+            }
+            // If already object, keep as is
+        } else {
+            this.boxJs.additionalRegisters = {};
+        }
         this.serializer = new Serializer();
     }
 

@@ -517,7 +517,7 @@ export class Gluon {
     async getGoldOracleBox(): Promise<GoldOracleBox> {
         if (!this.config.NODE_URL) throw new Error('NODE_URL is not set')
         const oracleJs = await this.nodeService.getUnspentBoxByTokenId(this.config.ORACLE_POOL_NFT)
-        return new GoldOracleBox(oracleJs[0])
+        return new GoldOracleBox(oracleJs.items[0])
     }
 
     /**
@@ -527,13 +527,13 @@ export class Gluon {
     async getGluonBox(): Promise<GluonBox> {
         if (!this.config.NODE_URL) throw new Error('NODE_URL is not set')
         const gluonJs = await this.nodeService.getUnspentBoxByTokenId(this.config.GLUON_NFT)
-        return new GluonBox(gluonJs[0])
+        return new GluonBox(gluonJs.items[0])
     }
 
     async getOracleBuyBackBoxJs(): Promise<any> {
         if (!this.config.NODE_URL) throw new Error('NODE_URL is not set')
         const buybackJs = await this.nodeService.getUnspentBoxByTokenId(this.config.ORACLE_BUYBACK_NFT)
-        return buybackJs[0]
+        return buybackJs.items[0]
     }
 
     /**
