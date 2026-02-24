@@ -575,4 +575,42 @@ export class Gluon {
 
         return 100 * (Number(protonValue) + Number(neutronValue)) / Number(neutronValue)
     }
+
+    /**
+     * Get the array of volumes for Protons to Neutrons transmutation
+     * @param gluonBox - input gluon box
+     * @returns {Promise<number[]>} array of volumes
+     */
+    async getVolumeProtonsToNeutronsArray(gluonBox: GluonBox): Promise<number[]> {
+        return await gluonBox.getVolumeProtonsToNeutronsArray()
+    }
+
+    /**
+     * Get the array of volumes for Neutrons to Protons transmutation
+     * @param gluonBox - input gluon box
+     * @returns {Promise<number[]>} array of volumes
+     */
+    async getVolumeNeutronsToProtonsArray(gluonBox: GluonBox): Promise<number[]> {
+        return await gluonBox.getVolumeNeutronsToProtonsArray()
+    }
+
+    /**
+     * Get the accumulated volume for Protons to Neutrons transmutation
+     * @param gluonBox - input gluon box
+     * @param days - number of days to accumulate (1-BUCKET_LEN)
+     * @returns {Promise<number>} accumulated volume
+     */
+    async accumulateVolumeProtonsToNeutrons(gluonBox: GluonBox, days?: number): Promise<number> {
+        return days !== undefined ? await gluonBox.accumulateVolumeProtonsToNeutrons(days) : await gluonBox.accumulateVolumeProtonsToNeutrons()
+    }
+
+    /**
+     * Get the accumulated volume for Neutrons to Protons transmutation
+     * @param gluonBox - input gluon box
+     * @param days - number of days to accumulate (1-BUCKET_LEN)
+     * @returns {Promise<number>} accumulated volume
+     */
+    async accumulateVolumeNeutronsToProtons(gluonBox: GluonBox, days?: number): Promise<number> {
+        return days !== undefined ? await gluonBox.accumulateVolumeNeutronsToProtons(days) : await gluonBox.accumulateVolumeNeutronsToProtons()
+    }
 }
