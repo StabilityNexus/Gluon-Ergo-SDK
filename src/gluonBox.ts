@@ -1,7 +1,7 @@
 import {ErgoTree} from "@nautilus-js/eip12-types";
 import {Serializer} from "./serializer";
 import {BUCKET_LEN, NEUTRON_ID, PROTON_ID} from "./consts";
-import {GoldOracleBox} from "./goldOracleBox";
+import {PegOracleBox} from "./pegOracleBox";
 
 export class GluonBox {
     boxJs: any;
@@ -143,10 +143,10 @@ export class GluonBox {
 
     /**
      * returns the fusion ratio
-     * @param goldOracle gold oracle
+     * @param pegOracle peg oracle
      */
-    async fusionRatio(goldOracle: GoldOracleBox): Promise<bigint> {
-        const pricePerGram = await goldOracle.getPricePerGram() // this is pt
+    async fusionRatio(pegOracle: PegOracleBox): Promise<bigint> {
+        const pricePerGram = await pegOracle.getPricePerGram() // this is pt
         const fissionedErg = this.getErgFissioned()
         const neutronsInCirculation = await this.getNeutronsCirculatingSupply()
         const rightHandMinVal = (neutronsInCirculation * BigInt(pricePerGram) / BigInt(fissionedErg))
@@ -170,23 +170,23 @@ export class GluonBox {
 
     /**
      * returns the neutron price in nano ERG
-     * @param goldOracle gold oracle
+     * @param pegOracle peg oracle
      */
-    async neutronPrice(goldOracle: GoldOracleBox): Promise<bigint> {
+    async neutronPrice(pegOracle: PegOracleBox): Promise<bigint> {
         const neutronsInCirculation = await this.getNeutronsCirculatingSupply()
         const fissonedErg = this.getErgFissioned()
-        const fusionRatio = await this.fusionRatio(goldOracle)
+        const fusionRatio = await this.fusionRatio(pegOracle)
         return (fusionRatio * BigInt(fissonedErg)) / neutronsInCirculation
     }
 
     /**
      * returns the proton price in nano ERG
-     * @param goldOracle gold oracle
+     * @param pegOracle peg oracle
      */
-    async protonPrice(goldOracle: GoldOracleBox): Promise<bigint> {
+    async protonPrice(pegOracle: PegOracleBox): Promise<bigint> {
         const protonsInCirculation = await this.getProtonsCirculatingSupply()
         const fissonedErg = this.getErgFissioned()
-        const fusionRatio = await this.fusionRatio(goldOracle)
+        const fusionRatio = await this.fusionRatio(pegOracle)
         const oneMinusFusionRatio = BigInt(1e9) - fusionRatio
         return (oneMinusFusionRatio * BigInt(fissonedErg)) / protonsInCirculation
     }

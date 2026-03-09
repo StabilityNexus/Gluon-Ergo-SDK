@@ -1,7 +1,7 @@
 {
-  "name": "gluon-gold-sdk",
+  "name": "gluon-ergo-sdk",
   "version": "1.0.0",
-  "description": "A SDK for the Gluon Gold protocol",
+  "description": "A generic SDK for Gluon protocols on Ergo blockchain",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
