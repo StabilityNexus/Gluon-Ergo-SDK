@@ -8,7 +8,7 @@ const node = new NodeService("http://95.217.180.19:9053/")
 async function testFission() {
     const gluon = new Gluon()
     const userBoxJs = await node.getBoxById("cb0237c893a7a9bc568b40f35a076ba49fe06cc2104dc641fc340b40fd5dc2a6")
-    const oracleBoxJs = await gluon.getGoldOracleBox()
+    const oracleBoxJs = await gluon.getOracleBox()
     const gluonBoxJs = await gluon.getGluonBox()
     const amountToFission = 1e9
 
@@ -18,7 +18,7 @@ async function testFission() {
 async function testFusion() {
     const gluon = new Gluon()
     const userBoxJs = await node.getBoxById("cb0237c893a7a9bc568b40f35a076ba49fe06cc2104dc641fc340b40fd5dc2a6")
-    const oracleBoxJs = await gluon.getGoldOracleBox()
+    const oracleBoxJs = await gluon.getOracleBox()
     const gluonBoxJs = await gluon.getGluonBox()
     const amountToFusion = 1e8
 
@@ -29,38 +29,38 @@ async function testBetaPlus() {
     const gluon = new Gluon()
     const userBoxJs = await node.getBoxById("cb0237c893a7a9bc568b40f35a076ba49fe06cc2104dc641fc340b40fd5dc2a6")
     const oracleBuyBackJs = await gluon.getOracleBuyBackBoxJs()
-    const oracleBoxJs = await gluon.getGoldOracleBox()
+    const oracleBoxJs = await gluon.getOracleBox()
     const gluonBoxJs = await gluon.getGluonBox()
     const height = await node.getNetworkHeight()
 
     const protonsToTransmute = 5000000
-    return await gluon.transmuteToGoldForEip12(gluonBoxJs, oracleBoxJs, [userBoxJs], oracleBuyBackJs, protonsToTransmute, height)
+    return await gluon.transmuteToNeutronForEip12(gluonBoxJs, oracleBoxJs, [userBoxJs], oracleBuyBackJs, protonsToTransmute, height)
 }
 
 async function testBetaMinus() {
     const gluon = new Gluon()
     const userBoxJs = await node.getBoxById("cb0237c893a7a9bc568b40f35a076ba49fe06cc2104dc641fc340b40fd5dc2a6")
     const oracleBuyBackJs = await gluon.getOracleBuyBackBoxJs()
-    const oracleBoxJs = await gluon.getGoldOracleBox()
+    const oracleBoxJs = await gluon.getOracleBox()
     const gluonBoxJs = await gluon.getGluonBox()
 
     const height = await node.getNetworkHeight()
 
     const neutronsToDecay = 2700000
-    return await gluon.transmuteFromGoldForEip12(gluonBoxJs, oracleBoxJs, [userBoxJs], oracleBuyBackJs, neutronsToDecay, height)
+    return await gluon.transmuteToProtonForEip12(gluonBoxJs, oracleBoxJs, [userBoxJs], oracleBuyBackJs, neutronsToDecay, height)
 }
 
 async function testTVL() {
     const gluon = new Gluon()
     const gluonBoxJs = await gluon.getGluonBox()
-    const oracleBoxJs = await gluon.getGoldOracleBox()
+    const oracleBoxJs = await gluon.getOracleBox()
     return await gluon.getTVL(gluonBoxJs, oracleBoxJs)
 }
 
 async function testFusionRatio() {
     const gluon = new Gluon()
     const gluonBox = await gluon.getGluonBox()
-    const oracleBox = await gluon.getGoldOracleBox()
+    const oracleBox = await gluon.getOracleBox()
 
     return await gluon.getReserveRatio(gluonBox, oracleBox)
 }

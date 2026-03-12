@@ -1,6 +1,6 @@
 import {Serializer} from "./serializer";
 
-export class GoldOracleBox {
+export class PegOracleBox {
     boxJs: any;
     serializer: Serializer;
 
@@ -19,7 +19,7 @@ export class GoldOracleBox {
     }
 
     /**
-     * returns gold price for 1 kg
+     * returns peg price for 1 kg
      */
     async getPrice(): Promise<number> {
         const registers = this.getRegisters();
@@ -28,7 +28,7 @@ export class GoldOracleBox {
     }
 
     /**
-     * returns gold price for 1 gram
+     * returns peg price for 1 gram
      */
     async getPricePerGram(): Promise<number> {
         const price = await this.getPrice();
