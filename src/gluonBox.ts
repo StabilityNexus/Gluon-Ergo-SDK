@@ -2,11 +2,12 @@ import {ErgoTree} from "@nautilus-js/eip12-types";
 import {Serializer} from "./serializer";
 import {BUCKET_LEN, NEUTRON_ID, PROTON_ID} from "./consts";
 import {PegOracleBox} from "./pegOracleBox";
+import {GLUON_QSTAR, GLUON_PHI0, GLUON_PHI1} from "./config";
 
 export class GluonBox {
     boxJs: any;
     serializer: Serializer;
-    qstar = BigInt(660000000)
+    qstar = GLUON_QSTAR
 
     constructor(box: any) {
         this.boxJs = box;
@@ -160,8 +161,8 @@ export class GluonBox {
      * @param volumeToMinus volume
      */
     varPhiBeta(rErg: bigint, volumeToBeNegate: number[], volumeToMinus: number[]): bigint {
-        const phi0 = BigInt(5000000)
-        const phi1 = BigInt(500000000)
+        const phi0 = GLUON_PHI0
+        const phi1 = GLUON_PHI1
         const sumVolumeToBeNegate = volumeToBeNegate.reduce((acc, x) => acc + BigInt(x), BigInt(0))
         const sumVolumeToMinus = volumeToMinus.reduce((acc, x) => acc + BigInt(x), BigInt(0))
         const volume = sumVolumeToBeNegate < sumVolumeToMinus ? BigInt(0) : sumVolumeToBeNegate - sumVolumeToMinus
