@@ -63,3 +63,25 @@ export class Config {
     }
 
 }
+
+/**
+ * Maximum fusion ratio cap (q*) used in the Gluon protocol's fusionRatio
+ * calculation. When the computed ratio exceeds this value it is clamped here.
+ * Expressed in nano-ERG units (1e9 base).
+ */
+export const GLUON_QSTAR: bigint = BigInt(660000000);
+
+/**
+ * Base (minimum) fee coefficient (φ₀) in the varPhiBeta fee-curve formula.
+ * This is the floor value of the dynamic fee regardless of trade volume.
+ * Expressed in nano-ERG units (1e9 base).
+ */
+export const GLUON_PHI0: bigint = BigInt(5000000);
+
+/**
+ * Volume-scaled fee coefficient (φ₁) in the varPhiBeta fee-curve formula.
+ * Multiplied by the net directional volume and divided by fissioned ERG to
+ * produce the variable portion of the protocol fee.
+ * Expressed in nano-ERG units (1e9 base).
+ */
+export const GLUON_PHI1: bigint = BigInt(500000000);
