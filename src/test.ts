@@ -1,9 +1,9 @@
 import { Config } from "./config";
 import { Gluon } from "./gluon";
 import { NodeService } from "./nodeService";
+import { NODE_URL } from "./consts";
 
-
-const node = new NodeService("http://213.239.193.208:9053/")
+const node = new NodeService(NODE_URL)
 
 async function testFission() {
     const gluon = new Gluon()

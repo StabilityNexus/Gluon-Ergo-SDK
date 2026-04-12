@@ -14,5 +14,9 @@ export const GLUON_TREE = '10730400040204020404040404000400040006043b9aca0006020
 export const DEV_FEE = 500;
 export const UI_FEE = 0;
 export const ORACLE_FEE = 100;
+/**
+ * Default Ergo node URL. Override this with an HTTPS endpoint in production.
+ * Example: gluon.config.NODE_URL = 'https://your-node.example.com:9053/'
+ */
 export const NODE_URL = 'http://213.239.193.208:9053/';
 export const BUCKET_LEN = 14;
