@@ -3,7 +3,7 @@ import { Gluon } from "./gluon";
 import { NodeService } from "./nodeService";
 
 
-const node = new NodeService("http://95.217.180.19:9053/")
+const node = new NodeService("http://213.239.193.208:9053/")
 
 async function testFission() {
     const gluon = new Gluon()
