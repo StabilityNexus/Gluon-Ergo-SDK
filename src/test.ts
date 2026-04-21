@@ -101,3 +101,33 @@ testFusionRatio().then((ratio) => {
     console.log(Number(ratio))
     console.log('\n')
 })
+
+async function testVolumes() {
+    const gluon = new Gluon()
+    const gluonBox = await gluon.getGluonBox()
+
+    const pToNArray = await gluon.getVolumeProtonsToNeutronsArray(gluonBox)
+    const nToPArray = await gluon.getVolumeNeutronsToProtonsArray(gluonBox)
+
+    const accPToN = await gluon.accumulateVolumeProtonsToNeutrons(gluonBox)
+    const accNToP = await gluon.accumulateVolumeNeutronsToProtons(gluonBox)
+    const partialAccPToN = await gluon.accumulateVolumeProtonsToNeutrons(gluonBox, 5)
+
+    return {
+        pToNArray,
+        nToPArray,
+        accPToN,
+        accNToP,
+        partialAccPToN
+    }
+}
+
+testVolumes().then((vols) => {
+    console.log('Volumes:\n')
+    console.log('Protons to Neutrons Array:', vols.pToNArray)
+    console.log('Neutrons to Protons Array:', vols.nToPArray)
+    console.log('Accumulated Protons to Neutrons:', vols.accPToN)
+    console.log('Accumulated Neutrons to Protons:', vols.accNToP)
+    console.log('Partial Accumulated (5 days) Protons to Neutrons:', vols.partialAccPToN)
+    console.log('\n')
+})
