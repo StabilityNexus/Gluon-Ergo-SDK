@@ -20,3 +20,35 @@ export const ORACLE_FEE = 100;
  */
 export const NODE_URL = 'http://213.239.193.208:9053/';
 export const BUCKET_LEN = 14;
+
+// ---------------------------------------------------------------------------
+// Gluon Gold — existing protocol constants (flat exports preserved above for
+// backward compatibility; grouped object for consumers that prefer it)
+// ---------------------------------------------------------------------------
+export const GLUON_GOLD = {
+  /** Protocol NFT token ID */
+  NFT_ID: GLUON_NFT,
+  /** GAU (Neutron) token ID */
+  NEUTRON_ID: NEUTRON_ID,
+  /** GAUC (Proton) token ID */
+  PROTON_ID: PROTON_ID,
+  /** Contract ErgoTree */
+  ERGO_TREE: GLUON_TREE,
+} as const;
+
+// ---------------------------------------------------------------------------
+// Gluon Dollar — deployed via tx
+// 6404a7b97658cdf859b9325bdeb325dfe73a4e1b690949b49f0460b08c3dca42
+// ---------------------------------------------------------------------------
+export const GLUON_DOLLAR = {
+  /** Protocol NFT token ID */
+  NFT_ID: '9fcb277ee225359b8c7e077a74dc67e7d346ab603e87af71228e0b9e529f92e9',
+  /** GSD (Neutron) token ID */
+  NEUTRON_ID: '323a14be71a04d0b2e1b9d472bcaff6e87f7176b35b0b72a0c1f494d3e101cfa',
+  /** GLYD (Proton) token ID */
+  PROTON_ID: '1aecb65751400b55b8b9615eafc97e13011b26e2e6905b7dc4f6b7f33aafbbf7',
+  /** Contract / Gluon box address */
+  ADDRESS: '9fLdzfEJrUD4psfSByhgbeH3ZwukzV3DEtznVgdWh7SzchuE4r6',
+  /** Contract ErgoTree */
+  ERGO_TREE: '0008cd026c07aa6015ae227046e7e25f968d1012af6331b0cb3c5f7423621b98fa596386',
+} as const;
